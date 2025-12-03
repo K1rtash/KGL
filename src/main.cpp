@@ -8,10 +8,12 @@
 #include "VBO.h"
 #include "EBO.h"
 #include "VAO.h"
+#include "Vector.h"
 #include "ShaderProgram.h"
 #include "Texture.h"
 #include "Camera.h"
 #include "Model.h"
+#include "Model2D.h"
 
 #include <iostream>
 
@@ -134,16 +136,7 @@ int main() {
 
 
     ShaderProgram shaderProgram2D{"../shaders/2d.vert", "../shaders/2d.frag"};
-    Texture texture2D{"../textures/verduras.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
-    texture2D.texUnit(&shaderProgram2D, "tex0", 0);
-    VAO vao2D{};
-    VBO vbo2D{triangle2Dvert, sizeof(triangle2Dvert), GL_STATIC_DRAW};
-    EBO ebo2D{triangle2Dind, sizeof(triangle2Dind), GL_STATIC_DRAW};
-    //puntero, layout en el shader, numero de componentes por atributo (1 float, 3 vec3...), typo de dato, tamaño de vertice entero (todos los numeros por su tamaño), donde empiezan los datos
-    vao2D.LinkAttrib(&vbo2D, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-    vao2D.LinkAttrib(&vbo2D, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    vao2D.LinkAttrib(&vbo2D, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    vao2D.Unbind(); vbo2D.Unbind(); ebo2D.Unbind();
+    Model2D modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), "../textures/verduras.png"};
     
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -194,11 +187,8 @@ int main() {
             pyramid.Draw(shaderProgram);
             cube.Draw(shaderProgram);
 
-            shaderProgram2D.Activate();
-            vao2D.Bind();
-            texture2D.Bind();
-            glActiveTexture(0);
-            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)0);
+            //shaderProgram2D.Activate();
+            //modelo2d.Draw(shaderProgram2D);
             
         // } Render
             glfwSwapBuffers(window);
