@@ -13,18 +13,18 @@
 
 class Camera 
 {
-    float aspect;
+    float aspect, speed = 2.0f;
     bool firstClick = true;
 public:
     glm::vec3 Position;
     glm::vec3 Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
     int width, height;
-    float speed = 0.1f, sensitivity = 100.0f;
+    float sensitivity = 100.0f;
 
     Camera(int width, int height, glm::vec3 position);
 	void Matrix(float FOVdeg, float nearPlane, float farPlane, ShaderProgram& shader, const char* uniform);
-	void Inputs(GLFWwindow* window); 	// Handles camera inputs
+	void Inputs(GLFWwindow* window, double deltaTime); 	// Handles camera inputs
     void Aspect(int width, int height);
 };
 #endif

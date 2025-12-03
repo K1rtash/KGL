@@ -16,7 +16,6 @@
 #include <iostream>
 
 void error_callback(int error, const char* description);
-bool hasWindowChanged(GLFWwindow* window, int* width, int* height);
 
 int main() {
     enum WindowMode {WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED, WINDOWMODE_RESIZABLE};
@@ -63,54 +62,6 @@ int main() {
     glfwSwapInterval(vsync);
 
     GLfloat vertices[] =
-    { //     COORDINATES     /        COLORS      /   TexCoord  //
-        -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-        -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-        0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	0.0f, 0.0f,
-        0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	5.0f, 0.0f,
-        0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	2.5f, 5.0f
-    };
-
-    // Indices para ordenar los vertices en el ebo
-    GLuint indices[] =
-    {
-        0, 1, 2,
-        0, 2, 3,
-        0, 1, 4,
-        1, 2, 4,
-        2, 3, 4,
-        3, 0, 4
-    };
-
-    GLfloat cubeVertices[] = {
-        //   Posición         // Color         // TexCoord
-        -0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,  0.0f,0.0f,
-        0.5f,-0.5f,-0.5f,   0.0f,1.0f,0.0f,  1.0f,0.0f,
-        0.5f, 0.5f,-0.5f,   0.0f,0.0f,1.0f,  1.0f,1.0f,
-        -0.5f, 0.5f,-0.5f,   1.0f,1.0f,0.0f,  0.0f,1.0f,
-
-        -0.5f,-0.5f, 0.5f,   1.0f,0.0f,1.0f,  0.0f,0.0f,
-        0.5f,-0.5f, 0.5f,   0.0f,1.0f,1.0f,  1.0f,0.0f,
-        0.5f, 0.5f, 0.5f,   1.0f,1.0f,1.0f,  1.0f,1.0f,
-        -0.5f, 0.5f, 0.5f,   0.3f,0.7f,0.9f,  0.0f,1.0f
-    };
-
-    GLuint cubeIndices[] = {
-        // Cara trasera
-        0,1,2,  2,3,0,
-        // Cara delantera
-        4,5,6,  6,7,4,
-        // Cara izquierda
-        0,4,7,  7,3,0,
-        // Cara derecha
-        1,5,6,  6,2,1,
-        // Cara inferior
-        0,1,5,  5,4,0,
-        // Cara superior
-        3,2,6,  6,7,3
-    };
-
-    GLfloat triangle2Dvert[] =
     { //     COORDINATES     /        COLORS      /     TexCoord
         -0.5f, 0.0f,  0.0f,     0.83f, 0.70f, 0.44f,	-0.5f, 0.0f,
         0.5f, 0.0f, 0.0f,     0.83f, 0.70f, 0.44f,	    0.5f, 0.0f,
@@ -118,40 +69,30 @@ int main() {
     };
 
     // Indices para ordenar los vertices en el ebo
-    GLuint triangle2Dind[] =
+    GLuint indices[] =
     {
         0, 1, 2,
     };
     
-    ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
-
-    Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), "../textures/verduras.png"};
-    pyramid.setPosition(glm::vec3(-1.0f, 0.0f, -2.0f));
-
-    Model cube{cubeVertices, sizeof(cubeVertices), cubeIndices, sizeof(cubeIndices), "../textures/bricks.png"};
-    cube.setPosition(glm::vec3(1.0f, 0.0f, -2.0f));
-    cube.setScale(glm::vec3(0.5f));
+    ShaderProgram shaderProgram{"../shaders/2d.vert", "../shaders/2d.frag"};
+    Texture texture{"../textures/verduras.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
+    texture.texUnit(&shaderProgram, "tex0", 0);
 
 
-    ShaderProgram shaderProgram2D{"../shaders/2d.vert", "../shaders/2d.frag"};
-    Texture texture2D{"../textures/verduras.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
-    texture2D.texUnit(&shaderProgram2D, "tex0", 0);
-    VAO vao2D{};
-    VBO vbo2D{triangle2Dvert, sizeof(triangle2Dvert), GL_STATIC_DRAW};
-    EBO ebo2D{triangle2Dind, sizeof(triangle2Dind), GL_STATIC_DRAW};
+    VAO vao{};
+    VBO vbo{vertices, sizeof(vertices), GL_STATIC_DRAW};
+    EBO ebo{indices, sizeof(indices), GL_STATIC_DRAW};
+
     //puntero, layout en el shader, numero de componentes por atributo (1 float, 3 vec3...), typo de dato, tamaño de vertice entero (todos los numeros por su tamaño), donde empiezan los datos
-    vao2D.LinkAttrib(&vbo2D, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
-    vao2D.LinkAttrib(&vbo2D, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    vao2D.LinkAttrib(&vbo2D, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
-    vao2D.Unbind(); vbo2D.Unbind(); ebo2D.Unbind();
-    
+    vao.LinkAttrib(&vbo, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
+    vao.LinkAttrib(&vbo, 1, 3, GL_FLOAT, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    vao.LinkAttrib(&vbo, 2, 2, GL_FLOAT, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    vao.Unbind(); vbo.Unbind(); ebo.Unbind();
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_CULL_FACE);
     if (msaa) glEnable(GL_MULTISAMPLE);
-
-    Camera camera{win_w, win_h, glm::vec3(0.0f, 0.0f, 2.0f)};
 
     double prev_s = glfwGetTime();
     double fps_update_countdown = 0.0;
@@ -177,9 +118,8 @@ int main() {
         }
 
         //Update viewport
-            glfwGetWindowSize(window, &win_w, &win_h);
-            glViewport(0, 0, win_w, win_h);
-            camera.Aspect(win_w, win_h);
+        glfwGetWindowSize(window, &win_w, &win_h);
+        glViewport(0, 0, win_w, win_h);
         
         //Render {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -187,25 +127,18 @@ int main() {
             
             shaderProgram.Activate();        
             
-            camera.Inputs(window, delta_time);
-            camera.Matrix(45.0f, 0.1f, 100.0f, shaderProgram, "camMatrix");
-            int modelLoc = glGetUniformLocation(shaderProgram.id, "model");
-            
-            pyramid.Draw(shaderProgram);
-            cube.Draw(shaderProgram);
-
-            shaderProgram2D.Activate();
-            vao2D.Bind();
-            texture2D.Bind();
+            vao.Bind();
+            texture.Bind();
             glActiveTexture(0);
-            glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (void*)0);
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0);
             
         // } Render
             glfwSwapBuffers(window);
         }
         
-        pyramid.Delete();
-        cube.Delete();
+        vao.Delete();
+        vbo.Delete();
+        ebo.Delete();
         shaderProgram.Delete();
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -215,12 +148,4 @@ int main() {
 void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
-}
-    
-bool hasWindowChanged(GLFWwindow* window, int* width, int* height)
-{
-    int w = *width, h = *height;
-    glfwGetWindowSize(window, width, height);
-    if( w != *width || h != *height ) return true;
-    return false;
 }
