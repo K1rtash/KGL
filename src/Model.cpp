@@ -1,9 +1,12 @@
 #include "Model.h"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, const char* texPath) : 
+Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath) : 
     vbo(vertices, vertSize, GL_STATIC_DRAW),
     ebo(indices, indSize, GL_STATIC_DRAW),
-    texture(texPath, GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE)
+    texture(texPath, GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE),
+    shader(shader)
 {
     vao.Bind();
     vao.LinkAttrib(&vbo, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
@@ -29,9 +32,8 @@ void Model::setRotation(float angle, const glm::vec3& axis) {
     modelMatrix = glm::rotate(modelMatrix, glm::radians(angle), axis);
 }
 
-void Model::Draw(ShaderProgram& shader) {
-    int modelLoc = glGetUniformLocation(shader.id, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+void Model::Draw() {
+    glUniformMatrix4fv(shader->UMAT4_LOC_MODEL, 1, GL_FALSE, glm::value_ptr(modelMatrix));
     vao.Bind();
     texture.Bind();
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);

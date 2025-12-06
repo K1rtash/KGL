@@ -1,16 +1,13 @@
 #version 410 core
 
-// Outputs colors in RGBA
-out vec4 FragColor;
+out vec4 FragColor; // Outputs colors in RGBA
 
+in vec3 color; // Inputs the color from the Vertex Shader
+in vec2 texCoord; // Inputs the texture coordinates from the Vertex Shader
 
-// Inputs the color from the Vertex Shader
-in vec3 color;
-// Inputs the texture coordinates from the Vertex Shader
-in vec2 texCoord;
+uniform sampler2D tex0; // Gets the Texture Unit
 
-// Gets the Texture Unit from the main function
-uniform sampler2D tex0;
+uniform float pintura;
 
 void main()
 {

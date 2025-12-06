@@ -8,21 +8,29 @@
 #include "VBO.h"
 #include "EBO.h"
 #include "VAO.h"
-#include "Vector.h"
 #include "ShaderProgram.h"
 #include "Texture.h"
 #include "Camera.h"
 #include "Model.h"
-#include "Model2D.h"
+#include "Sprite.h"
 
 #include <iostream>
 
+enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED};
+
+struct KGL_WindowConfig {
+    int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 1;
+    const float LOGICAL_WIDTH = 1920.0f, LOGICAL_HEIGHT = 1080.0f, LOGICAL_ASPECT = LOGICAL_WIDTH / LOGICAL_HEIGHT;
+};
+
 void error_callback(int error, const char* description);
-bool hasWindowChanged(GLFWwindow* window, int* width, int* height);
+void resize_callback(GLFWwindow *window, int width, int height);
+void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 
 int main() {
-    enum WindowMode {WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED, WINDOWMODE_RESIZABLE};
-    int win_w = 800, win_h = 800, msaa = 16, windowMode = WINDOWMODE_WINDOWED, vsync = 1;
+    KGL_WindowConfig windowConfig;
+    windowConfig.windowMode = WINDOWMODE_WINDOWED;
+    windowConfig.vsync = 1;
     glfwInit();
 
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
@@ -33,36 +41,47 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_REFRESH_RATE, video->refreshRate);
-    glfwWindowHint(GLFW_SAMPLES, msaa);
-    glfwWindowHint(GLFW_RESIZABLE, windowMode);
+    glfwWindowHint(GLFW_SAMPLES, windowConfig.msaa);
+    glfwWindowHint(GLFW_RESIZABLE, !windowConfig.windowMode);
 
 
-    switch (windowMode) 
+    switch (windowConfig.windowMode) 
     {
         case WINDOWMODE_FULLSCREEN:
             glfwWindowHint(GLFW_RED_BITS, video->redBits);
             glfwWindowHint(GLFW_GREEN_BITS, video->greenBits);
             glfwWindowHint(GLFW_BLUE_BITS, video->blueBits);
-            win_w = video->width;  // Use our 'desktop' resolution for window size
-            win_h = video->height; // to get a 'full screen borderless' window.
-            window = glfwCreateWindow(win_w, win_h, "OpenGL Context", monitor, NULL);
+            windowConfig.width = video->width;  // Use our 'desktop' resolution for window size
+            windowConfig.height = video->height; // to get a 'full screen borderless' window.
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", monitor, NULL);
             break;
-        case WINDOWMODE_WINDOWED:
+        case WINDOWMODE_WINDOWED_BORDERLESS:
+            glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
             int x, y, w, h;
             glfwGetMonitorWorkarea(monitor, &x, &y, &w, &h);
             window = glfwCreateWindow(w, h, "OpenGL Context", NULL, NULL);
             glfwSetWindowPos(window, x, y);
             break;
+        case WINDOWMODE_WINDOWED:
+            glfwWindowHint(GLFW_RESIZABLE, 1);
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", NULL, NULL);
+            glfwMaximizeWindow(window);
+            break;
         default:
-                window = glfwCreateWindow(win_w, win_h, "OpenGL Context", NULL, NULL);
-                break;
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", NULL, NULL);
     }
 
     glfwMakeContextCurrent(window);
+    glfwSetWindowUserPointer(window, &windowConfig);
+    glfwGetWindowSize(window, &windowConfig.width, &windowConfig.height);
 
     glfwSetErrorCallback(error_callback);
+    glfwSetWindowSizeCallback(window, resize_callback);
+
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    glfwSwapInterval(vsync);
+    glfwSwapInterval(windowConfig.vsync);
+
+    setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
 
     GLfloat vertices[] =
     { //     COORDINATES     /        COLORS      /   TexCoord  //
@@ -114,7 +133,7 @@ int main() {
 
     GLfloat triangle2Dvert[] =
     { //     COORDINATES     /        COLORS      /     TexCoord
-        -0.5f, 0.0f,  0.0f,     0.83f, 0.70f, 0.44f,	-0.5f, 0.0f,
+        -0.5f, 0.0f,  0.0f,     1.0f, 0.70f, 0.44f,	-0.5f, 0.0f,
         0.5f, 0.0f, 0.0f,     0.83f, 0.70f, 0.44f,	    0.5f, 0.0f,
         0.0f, 0.5f, 0.0f,     0.83f, 0.70f, 0.44f,	    0.0f, 0.5f,
     };
@@ -126,28 +145,31 @@ int main() {
     };
     
     ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
+    shaderProgram.AddUniform("pintura");
 
-    Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), "../textures/verduras.png"};
+    Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), &shaderProgram, "../textures/verduras.png"};
     pyramid.setPosition(glm::vec3(-1.0f, 0.0f, -2.0f));
 
-    Model cube{cubeVertices, sizeof(cubeVertices), cubeIndices, sizeof(cubeIndices), "../textures/bricks.png"};
+    Model cube{cubeVertices, sizeof(cubeVertices), cubeIndices, sizeof(cubeIndices), &shaderProgram, "../textures/bricks.png"};
     cube.setPosition(glm::vec3(1.0f, 0.0f, -2.0f));
     cube.setScale(glm::vec3(0.5f));
 
 
-    ShaderProgram shaderProgram2D{"../shaders/2d.vert", "../shaders/2d.frag"};
-    Model2D modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), "../textures/verduras.png"};
-    
+    Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, "../textures/verduras.png", 100, 170};
+    modelo2d.setPosition(10.0f, 150.0f);
+    modelo2d.setRotation(10.0f);
+    modelo2d.setScale(2.0f);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
     //glEnable(GL_CULL_FACE);
-    if (msaa) glEnable(GL_MULTISAMPLE);
+    if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
 
-    Camera camera{win_w, win_h, glm::vec3(0.0f, 0.0f, 2.0f)};
+    Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f), &shaderProgram};
 
     double prev_s = glfwGetTime();
     double fps_update_countdown = 0.0;
+    int temp_time_passed = 0;
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
@@ -156,6 +178,7 @@ int main() {
         double current_s = glfwGetTime();
         double delta_time = current_s - prev_s;
         prev_s = current_s;
+        temp_time_passed++; //TEMPORAL
 
         //Input
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -164,16 +187,11 @@ int main() {
         fps_update_countdown -= delta_time;
         if(fps_update_countdown <= 0.0 && delta_time > 0.0) {
             double fps = 1.0 / delta_time;
-            const char* title = (std::format("OpenGL Context | {} FPS", (int)fps)).c_str();
+            const char* title = (std::format("OpenGL Context | {} FPS | Time: {}", (int)fps, temp_time_passed).c_str());
             glfwSetWindowTitle(window, title);
             fps_update_countdown = 0.1;
         }
 
-        //Update viewport
-            glfwGetWindowSize(window, &win_w, &win_h);
-            glViewport(0, 0, win_w, win_h);
-            camera.Aspect(win_w, win_h);
-        
         //Render {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -181,14 +199,12 @@ int main() {
             shaderProgram.Activate();        
             
             camera.Inputs(window, delta_time);
-            camera.Matrix(45.0f, 0.1f, 100.0f, shaderProgram, "camMatrix");
-            int modelLoc = glGetUniformLocation(shaderProgram.id, "model");
+            camera.Matrix(45.0f, 0.1f, 100.0f);
             
-            pyramid.Draw(shaderProgram);
-            cube.Draw(shaderProgram);
+            pyramid.Draw();
+            cube.Draw();
 
-            //shaderProgram2D.Activate();
-            //modelo2d.Draw(shaderProgram2D);
+            modelo2d.Draw(windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT);
             
         // } Render
             glfwSwapBuffers(window);
@@ -206,11 +222,31 @@ void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
-    
-bool hasWindowChanged(GLFWwindow* window, int* width, int* height)
+
+void resize_callback(GLFWwindow *window, int width, int height)
 {
-    int w = *width, h = *height;
-    glfwGetWindowSize(window, width, height);
-    if( w != *width || h != *height ) return true;
-    return false;
+    KGL_WindowConfig* wcfg = (KGL_WindowConfig*)glfwGetWindowUserPointer(window);
+    wcfg->width = width, wcfg->height = height;
+
+    setLogicalPresentation(width, height, wcfg->LOGICAL_ASPECT);
+}
+
+void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT) 
+{
+    float aspect = (float)width / (float)height;
+    int viewportX, viewportY, viewportW, viewportH;
+
+    if (aspect > LOGICAL_ASPECT) {
+        viewportH = height;
+        viewportW = (int)(height * LOGICAL_ASPECT);
+        viewportX = (width - viewportW) / 2;
+        viewportY = 0;
+    } else {
+        viewportW = width;
+        viewportH = (int)(width / LOGICAL_ASPECT);
+        viewportX = 0;
+        viewportY = (height - viewportH) / 2;
+    }
+
+    glViewport(viewportX, viewportY, viewportW, viewportH);
 }

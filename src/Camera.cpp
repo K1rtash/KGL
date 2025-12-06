@@ -1,11 +1,10 @@
 #include "Camera.h"
 
-Camera::Camera(int width, int height, glm::vec3 position) : width{width}, height{height}, Position{position} 
+Camera::Camera(float width, float height, glm::vec3 position, ShaderProgram* shader) : width{width}, height{height}, aspect{std::max(0.1f, width / height)}, Position{position}, shader{shader} 
 {
-    Aspect(width, height);
 }
 
-void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane, ShaderProgram& shader, const char* uniform)
+void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
 {
     // Initializes matrices since otherwise they will be the null matrix
     glm::mat4 view = glm::mat4(1.0f);
@@ -16,7 +15,8 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane, ShaderProgram
     projection = glm::perspective(glm::radians(FOVdeg), aspect, nearPlane, farPlane);
     
     // Exports the camera matrix to the Vertex Shader
-    glUniformMatrix4fv(glGetUniformLocation(shader.id, uniform), 1, GL_FALSE, glm::value_ptr(projection * view));
+    glUniformMatrix4fv(shader->UMAT4_LOC_VIEW, 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(shader->UMAT4_LOC_PROJECTION, 1, GL_FALSE, glm::value_ptr(projection));
 }
 
 void Camera::Inputs(GLFWwindow* window, double deltaTime) 
@@ -62,11 +62,4 @@ void Camera::Inputs(GLFWwindow* window, double deltaTime)
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         firstClick = true;
     }
-}
-
-void Camera::Aspect(int width, int height) 
-{
-    this->width = width;
-    this->height = height;
-    aspect = std::max(0.1f, static_cast<float>(width) / static_cast<float>(height));
 }

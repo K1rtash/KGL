@@ -13,12 +13,13 @@ out vec3 color;
 // Outputs the texture coordinates to the fragment shader
 out vec2 texCoord;
 
-uniform mat4 camMatrix;
+uniform mat4 view;
 uniform mat4 model;
+uniform mat4 proj;
 
 void main()
 {
-	gl_Position = camMatrix * model * vec4(aPos, 1.0); 	// Outputs the positions/coordinates of all vertices
+	gl_Position = proj * view * model * vec4(aPos, 1.0); 	// Outputs the positions/coordinates of all vertices
 	color = aColor; 	// Assigns the colors from the Vertex Data to "color"
 	texCoord = aTex; 	// Assigns the texture coordinates from the Vertex Data to "texCoord"
 }

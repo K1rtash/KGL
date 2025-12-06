@@ -49,6 +49,17 @@ GLuint compileShaderSource(const char* source, GLenum type)
     return shader;
 }
 
+void getStaticUniformsLoc(ShaderProgram* shader) {
+    shader->UMAT4_LOC_PROJECTION = glGetUniformLocation(shader->id, "proj");
+    shader->UMAT4_LOC_VIEW = glGetUniformLocation(shader->id, "view");
+    shader->UMAT4_LOC_MODEL = glGetUniformLocation(shader->id, "model");
+    shader->USAM2D_TEX0 = glGetUniformLocation(shader->id, "tex0");
+};
+
+void ShaderProgram::AddUniform(const char* name) {
+    uniformLocations[name] = glGetUniformLocation(id, name);
+}
+
 void ShaderProgram::linkShaders(GLuint vertex_shader, GLuint fragment_shader) 
 {
     glAttachShader(id, vertex_shader);
@@ -75,11 +86,16 @@ ShaderProgram::ShaderProgram(const char* vertex_shader_path, const char* fragmen
     vertPath{vertex_shader_path}, 
     fragPath{fragment_shader_path} 
 {
-    linkShaders
-    (
-        compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
-        compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER)
-    );
+    try {
+        linkShaders
+        (
+            compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
+            compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER)
+        );
+    } catch (std::runtime_error& e) {
+        std::cout << "Error while creating shader program: " << e.what() << std::endl;
+    }
+    getStaticUniformsLoc(this);
 }
 
 void ShaderProgram::Reload() {
@@ -90,6 +106,8 @@ void ShaderProgram::Reload() {
         compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
         compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER)
     );
+    
+    getStaticUniformsLoc(this);
 }
 
 void ShaderProgram::Delete() {
