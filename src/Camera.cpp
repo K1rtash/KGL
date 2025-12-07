@@ -16,11 +16,11 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
     view = glm::lookAt(Position, Position + Orientation, Up);
     projection = glm::perspective(glm::radians(FOVdeg), aspect, nearPlane, farPlane);
     
-    //cameraMatrix = projection * view;
+    cameraMatrix = projection * view;
 
     // Exports the camera matrix to the Vertex Shader
-    glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(projection));
+    //glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
+    //glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(projection));
 }
 
 void Camera::useShaderProgram(ShaderProgram* shader) {

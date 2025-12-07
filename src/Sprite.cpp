@@ -50,9 +50,10 @@ void Sprite::Draw() {
         -1.0f, 1.0f
     );
 
+    glUniformMatrix4fv(shader->GetUniformLoc("cameraMatrix"), 1, GL_FALSE, glm::value_ptr(proj * view));
     glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(proj));
+    //glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
+    //glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
     vao.Bind();
     texture.Bind();

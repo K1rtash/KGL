@@ -15,6 +15,7 @@
 #include "Sprite.h"
 
 #include <iostream>
+#include <algorithm>
 
 enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED};
 
@@ -177,9 +178,7 @@ int main() {
     shaderProgram.AddUniform("view");
     shaderProgram.AddUniform("proj");
     shaderProgram.AddUniform("tex0");
-    /* NUEVO <.--.> */
-    ShaderProgram lightShader{"../shaders/light.vert", "../shaders/light.frag"};
-    
+    /* NUEVO <.--.> */    
     VAO ligthVao;
     ligthVao.Bind();
     VBO lightVbo{lightVertices, sizeof(lightVertices), GL_STATIC_DRAW};
@@ -188,6 +187,18 @@ int main() {
     ligthVao.Unbind();
     lightEbo.Unbind();
     lightVbo.Unbind();
+
+    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
+	glm::mat4 lightModel = glm::mat4(1.0f);
+	lightModel = glm::translate(lightModel, lightPos);
+
+    ShaderProgram lightShader{"../shaders/light.vert", "../shaders/light.frag"};
+    lightShader.AddUniform("model");
+    lightShader.AddUniform("cameraMatrix");
+    lightShader.AddUniform("lightColor");
+    glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+	glUniform4f(lightShader.GetUniformLoc("lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     /* NUEVO <.xx.> */
     
     Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), &shaderProgram, "../textures/verduras.png"};
@@ -197,9 +208,8 @@ int main() {
     cube.setPosition(glm::vec3(1.0f, 0.0f, -2.0f));
     cube.setScale(glm::vec3(0.5f));
 
-
     Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, "../textures/verduras.png", 100, 170, windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT};
-    modelo2d.setPosition(10.0f, 150.0f);
+    modelo2d.setPosition(-900.0f, 370.0f);
     modelo2d.setRotation(10.0f);
     modelo2d.setScale(2.0f);
 
@@ -239,19 +249,26 @@ int main() {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             
-            shaderProgram.Activate();        
-            
             camera.Inputs(window, delta_time);
-            camera.useShaderProgram(&shaderProgram);
             camera.updateMatrix(45.0f, 0.1f, 100.0f);
             
+            shaderProgram.Activate();       
+            camera.Matrix(&shaderProgram, "cameraMatrix");
             pyramid.Draw();
             cube.Draw();
-
+            modelo2d.setRotation(temp_time_passed * 0.5f);
+            modelo2d.setScale(std::max(0.5, sin((double)temp_time_passed * 0.2)));
             modelo2d.Draw();
 
             /* nuevo */
-            //lightShader.Activate(); 
+            lightShader.Activate(); 
+            camera.Matrix(&lightShader, "cameraMatrix");
+            ligthVao.Bind();
+            glm::mat4 lightModelMatrix = glm::mat4(1.0f);
+            lightModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{1.0f, 1.0f, 1.0f});
+            glm::vec4 lightVec = glm::vec4{1.0f, 1.0f, 0.3f, 1.0f};
+            glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
+            /* nuevo*/
             
         // } Render
             glfwSwapBuffers(window);
