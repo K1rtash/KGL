@@ -11,6 +11,11 @@
 
 #include "ShaderProgram.h"
 
+/**
+ * @class Camera
+ * @brief Basic 3D camera with perspective view
+ * @see Model
+ */
 class Camera 
 {
     float speed = 2.0f, sensitivity = 100.0f;

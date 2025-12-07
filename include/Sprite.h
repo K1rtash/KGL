@@ -27,7 +27,23 @@ class Sprite
     float width_px, height_px;
     
 public:
-    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize,  ShaderProgram* shader, const char* texPath, int width, int height);
+    /**
+     * @brief Creates a new 2D sprite
+     * @param vertices Array of vertices defining the model geometry
+     * @param vertSize Size of the array of vertices
+     * @param indices Array of indices defining the model geometry
+     * @param indSize Size of the array of indices
+     * @param shader Shader program to use in this element
+     * @param texPath Path to the model's texture
+     * @param width Width in pixels
+     * @param height Height in pixels
+     * @warning Will throw std::runtime_error if the given vertices, indices, or texture are incorrect
+     * @see Texture
+     * @see VBO
+     * @see VAO
+     * @see EBO
+     */
+    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath, int width, int height);
     void setPosition(float x, float y);
     void setScale(float s);
     void setRotation(float angle);
