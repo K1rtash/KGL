@@ -1,10 +1,12 @@
 #include "Camera.h"
+#include <iostream>
 
-Camera::Camera(float width, float height, glm::vec3 position, ShaderProgram* shader) : width{width}, height{height}, aspect{std::max(0.1f, width / height)}, Position{position}, shader{shader} 
+Camera::Camera(float width, float height, glm::vec3 position) : 
+    width{width}, height{height}, aspect{std::max(0.1f, width / height)}, Position{position}
 {
 }
 
-void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
+void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
 {
     // Initializes matrices since otherwise they will be the null matrix
     glm::mat4 view = glm::mat4(1.0f);
@@ -14,9 +16,20 @@ void Camera::Matrix(float FOVdeg, float nearPlane, float farPlane)
     view = glm::lookAt(Position, Position + Orientation, Up);
     projection = glm::perspective(glm::radians(FOVdeg), aspect, nearPlane, farPlane);
     
+    //cameraMatrix = projection * view;
+
     // Exports the camera matrix to the Vertex Shader
-    glUniformMatrix4fv(shader->UMAT4_LOC_VIEW, 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(shader->UMAT4_LOC_PROJECTION, 1, GL_FALSE, glm::value_ptr(projection));
+    glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(projection));
+}
+
+void Camera::useShaderProgram(ShaderProgram* shader) {
+    if (shader != nullptr) this->shader = shader; else std::cout << "camera provided shader program is invalid, cant switch" << std::endl;
+}
+
+void Camera::Matrix(ShaderProgram* shader, const char* uniform) {
+    int loc = shader->GetUniformLoc(uniform);
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(cameraMatrix));
 }
 
 void Camera::Inputs(GLFWwindow* window, double deltaTime) 

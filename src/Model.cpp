@@ -33,7 +33,7 @@ void Model::setRotation(float angle, const glm::vec3& axis) {
 }
 
 void Model::Draw() {
-    glUniformMatrix4fv(shader->UMAT4_LOC_MODEL, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
     vao.Bind();
     texture.Bind();
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);

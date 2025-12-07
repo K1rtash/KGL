@@ -8,6 +8,14 @@
 #include "Texture.h"
 #include <glm/glm.hpp>
 
+/**
+ * @class Sprite
+ * @brief Contains a 2D texture that can be transformed
+ * @see Texture
+ * @see VBO
+ * @see VAO
+ * @see EBO
+ */
 class Sprite 
 {
     VAO vao;
@@ -25,6 +33,7 @@ class Sprite
     glm::mat4 model = glm::mat4(1.0f);
 
     float width_px, height_px;
+    const float LOGICAL_SCREEN_WIDTH, LOGICAL_SCREEN_HEIGHT;
     
 public:
     /**
@@ -37,17 +46,15 @@ public:
      * @param texPath Path to the model's texture
      * @param width Width in pixels
      * @param height Height in pixels
+     * @param screenWidth Logical screen width in pixels
+     * @param screenHeight Logical screen height in pixels
      * @warning Will throw std::runtime_error if the given vertices, indices, or texture are incorrect
-     * @see Texture
-     * @see VBO
-     * @see VAO
-     * @see EBO
      */
-    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath, int width, int height);
+    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath, int width, int height, float screenWidth, float screenHeight);
     void setPosition(float x, float y);
     void setScale(float s);
     void setRotation(float angle);
-    void Draw(int screenW, int screenH);
+    void Draw();
     void Delete();
 };
 

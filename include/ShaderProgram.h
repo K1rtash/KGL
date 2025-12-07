@@ -11,8 +11,8 @@ class ShaderProgram
     const char* fragPath;
     std::unordered_map<std::string, int>uniformLocations;
     void linkShaders(GLuint vertex_shader, GLuint fragment_shader);
+    void getUniformsAndLinkShaders();
 public:
-    int UMAT4_LOC_PROJECTION, UMAT4_LOC_VIEW, UMAT4_LOC_MODEL, USAM2D_TEX0; 
     GLuint id;
     /**
      * @brief Creates a new shader program consisting of a Vertex and Fragment shader

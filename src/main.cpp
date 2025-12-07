@@ -144,9 +144,52 @@ int main() {
         0, 1, 2,
     };
     
-    ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
-    shaderProgram.AddUniform("pintura");
+    GLfloat lightVertices[] =
+    { //     COORDINATES     //
+        -0.1f, -0.1f,  0.1f,
+        -0.1f, -0.1f, -0.1f,
+        0.1f, -0.1f, -0.1f,
+        0.1f, -0.1f,  0.1f,
+        -0.1f,  0.1f,  0.1f,
+        -0.1f,  0.1f, -0.1f,
+        0.1f,  0.1f, -0.1f,
+        0.1f,  0.1f,  0.1f
+    };
 
+    GLuint lightIndices[] =
+    {
+        0, 1, 2,
+        0, 2, 3,
+        0, 4, 7,
+        0, 7, 3,
+        3, 7, 6,
+        3, 6, 2,
+        2, 6, 5,
+        2, 5, 1,
+        1, 5, 4,
+        1, 4, 0,
+        4, 5, 6,
+        4, 6, 7
+    };
+
+    ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
+    shaderProgram.AddUniform("model");
+    shaderProgram.AddUniform("view");
+    shaderProgram.AddUniform("proj");
+    shaderProgram.AddUniform("tex0");
+    /* NUEVO <.--.> */
+    ShaderProgram lightShader{"../shaders/light.vert", "../shaders/light.frag"};
+    
+    VAO ligthVao;
+    ligthVao.Bind();
+    VBO lightVbo{lightVertices, sizeof(lightVertices), GL_STATIC_DRAW};
+    EBO lightEbo{lightIndices, sizeof(lightIndices), GL_STATIC_DRAW};
+    ligthVao.LinkAttrib(&lightVbo, 0, 3, GL_FLOAT, 3 * sizeof(GLfloat), (void*)0);
+    ligthVao.Unbind();
+    lightEbo.Unbind();
+    lightVbo.Unbind();
+    /* NUEVO <.xx.> */
+    
     Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), &shaderProgram, "../textures/verduras.png"};
     pyramid.setPosition(glm::vec3(-1.0f, 0.0f, -2.0f));
 
@@ -155,7 +198,7 @@ int main() {
     cube.setScale(glm::vec3(0.5f));
 
 
-    Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, "../textures/verduras.png", 100, 170};
+    Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, "../textures/verduras.png", 100, 170, windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT};
     modelo2d.setPosition(10.0f, 150.0f);
     modelo2d.setRotation(10.0f);
     modelo2d.setScale(2.0f);
@@ -165,7 +208,7 @@ int main() {
     //glEnable(GL_CULL_FACE);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
 
-    Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f), &shaderProgram};
+    Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 2.0f)};
 
     double prev_s = glfwGetTime();
     double fps_update_countdown = 0.0;
@@ -199,12 +242,16 @@ int main() {
             shaderProgram.Activate();        
             
             camera.Inputs(window, delta_time);
-            camera.Matrix(45.0f, 0.1f, 100.0f);
+            camera.useShaderProgram(&shaderProgram);
+            camera.updateMatrix(45.0f, 0.1f, 100.0f);
             
             pyramid.Draw();
             cube.Draw();
 
-            modelo2d.Draw(windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT);
+            modelo2d.Draw();
+
+            /* nuevo */
+            //lightShader.Activate(); 
             
         // } Render
             glfwSwapBuffers(window);
@@ -213,6 +260,11 @@ int main() {
         pyramid.Delete();
         cube.Delete();
         shaderProgram.Delete();
+        lightShader.Delete();
+        ligthVao.Delete();
+        lightEbo.Delete();
+        lightVbo.Delete();
+
         glfwDestroyWindow(window);
         glfwTerminate();
         return 0;
