@@ -11,8 +11,6 @@ out vec2 texCoord;
 out vec3 Normal;
 out vec3 crntPos;
 
-//uniform mat4 proj;
-//uniform mat4 view;
 uniform mat4 cameraMatrix;
 uniform mat4 model;
 
@@ -21,7 +19,7 @@ void main()
 	//gl_Position = proj * view * model * vec4(aPos, 1.0);
 	crntPos = vec3(model * vec4(aPos, 1.0f));
 
-	gl_Position = cameraMatrix * vec4(crntPos, 1.0f);
+	gl_Position = cameraMatrix * vec4(crntPos, 1.0);
 	color = aColor; 	
 	texCoord = aTex; 	
 	Normal = aNormal;

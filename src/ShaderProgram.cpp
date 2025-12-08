@@ -55,7 +55,6 @@ void ShaderProgram::getUniformsAndLinkShaders() {
         compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER));
     for (auto& [name, location] : uniformLocations) {
         location = glGetUniformLocation(this->id, name.c_str());
-        std::cout << "uniform locationsfor shaderid: " << id << " -> " << "name: " << name << " loc: " << location << std::endl;
     }
 }
 

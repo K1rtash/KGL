@@ -277,37 +277,24 @@ int main() {
             
             camera.Inputs(window, delta_time);
             camera.updateMatrix(45.0f, 0.1f, 100.0f);
-            /*lightColor = glm::vec4(
-                tan(temp_time_passed * 0.07f),
-                cos(temp_time_passed * 0.06f),
-                sin(temp_time_passed * 0.05f), // más lento
-                1.0f
-            );*/
 
             shaderProgram.Activate();       
+            glUniform3f(glGetUniformLocation(shaderProgram.id, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
+            //std::cout << camera.Position.x << " " << camera.Position.y << " "<< camera.Position.z << std::endl;
             camera.Matrix(&shaderProgram, "cameraMatrix");
             pyramid_vao.Bind();
             brickTex.Bind();
             glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
             
-            glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-
             lightShader.Activate(); 
             camera.Matrix(&lightShader, "cameraMatrix");
             ligthVao.Bind();
-            glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-            
-            glm::mat4 lightModelMatrix = glm::mat4(1.0f);
-            lightModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{1.0f, 1.0f, 1.0f});
-            glm::vec4 lightVec = glm::vec4{1.0f, 1.0f, 0.3f, 1.0f};
             glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
             
         // } Render
             glfwSwapBuffers(window);
         }
         
-        //pyramid.Delete();
-        //cube.Delete();
         shaderProgram.Delete();
         lightShader.Delete();
         ligthVao.Delete();
