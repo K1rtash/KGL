@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-Texture::Texture(const char* path, GLenum texType, GLenum slot, GLenum pixelType) : type{texType}
+Texture::Texture(const char* path, GLenum texType, GLuint slot, GLenum pixelType) : type{texType}, unit{slot} 
 {
     int numColCh;
     stbi_set_flip_vertically_on_load(true);
@@ -23,7 +23,7 @@ Texture::Texture(const char* path, GLenum texType, GLenum slot, GLenum pixelType
     }
 
     glGenTextures(1, &id); // Generates an OpenGL texture object
-    glActiveTexture(slot); // Assigns the texture to a Texture Unit
+    glActiveTexture(GL_TEXTURE0 + slot); // Assigns the texture to a Texture Unit
     Bind();
 
     // Configures the type of algorithm that is used to make the image smaller or bigger
@@ -42,6 +42,7 @@ Texture::Texture(const char* path, GLenum texType, GLenum slot, GLenum pixelType
 }
 
 void Texture::Bind() {
+    glActiveTexture(GL_TEXTURE0 + unit);
     glBindTexture(type, id);
 }
 
@@ -55,11 +56,10 @@ void Texture::Delete() {
 
 void Texture::texUnit(ShaderProgram* shader, const char* uniform, GLuint unit) 
 {
-    //GLuint texUni = glGetUniformLocation(shader->id, uniform); // Gets the location of the uniform
     shader->Activate(); // Shader needs to be activated before changing the value of a uniform
-    glUniform1i(shader->GetUniformLoc(uniform), unit); // Sets the value of the uniform
+    glUniform1i(glGetUniformLocation(shader->id, uniform), unit); // Sets the value of the uniform
 }
 
 Texture::~Texture() {
-    Delete();
+    //Delete();
 }

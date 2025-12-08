@@ -10,11 +10,12 @@
  * Loader based on stb_image
  */
 class Texture {
+public:
     int width, height;
     GLenum format;
-public:
     GLuint id;
     GLenum type;
+    GLuint unit;
     /**
      * @brief Creates a new GPU texture
      * @param path Path to the asset
@@ -24,7 +25,7 @@ public:
      * @warning Will throw a std::runtime_error if the path cant be resolved or if the image format is not supported
      * @note Supported image formats: .PNG .JPG && all supported by stb_image
      */
-    Texture(const char* path, GLenum texType, GLenum slot, GLenum pixelType);
+    Texture(const char* path, GLenum texType, GLuint slot, GLenum pixelType);
     /**
      * @brief Calls Delete()
      */

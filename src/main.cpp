@@ -85,77 +85,18 @@ int main() {
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
 
     GLfloat vertices[] =
-    { //     COORDINATES     /        COLORS          /    TexCoord   /        NORMALS       //
-        -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f, 	 0.0f, 0.0f,      0.0f, -1.0f, 0.0f, // Bottom side
-        -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 0.0f, 5.0f,      0.0f, -1.0f, 0.0f, // Bottom side
-        0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 5.0f,      0.0f, -1.0f, 0.0f, // Bottom side
-        0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 0.0f,      0.0f, -1.0f, 0.0f, // Bottom side
-
-        -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f, 	 0.0f, 0.0f,     -0.8f, 0.5f,  0.0f, // Left Side
-        -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 0.0f,     -0.8f, 0.5f,  0.0f, // Left Side
-        0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	 2.5f, 5.0f,     -0.8f, 0.5f,  0.0f, // Left Side
-
-        -0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 0.0f,      0.0f, 0.5f, -0.8f, // Non-facing side
-        0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 0.0f, 0.0f,      0.0f, 0.5f, -0.8f, // Non-facing side
-        0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	 2.5f, 5.0f,      0.0f, 0.5f, -0.8f, // Non-facing side
-
-        0.5f, 0.0f, -0.5f,     0.83f, 0.70f, 0.44f,	 0.0f, 0.0f,      0.8f, 0.5f,  0.0f, // Right side
-        0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 0.0f,      0.8f, 0.5f,  0.0f, // Right side
-        0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	 2.5f, 5.0f,      0.8f, 0.5f,  0.0f, // Right side
-
-        0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f,	 5.0f, 0.0f,      0.0f, 0.5f,  0.8f, // Facing side
-        -0.5f, 0.0f,  0.5f,     0.83f, 0.70f, 0.44f, 	 0.0f, 0.0f,      0.0f, 0.5f,  0.8f, // Facing side
-        0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	 2.5f, 5.0f,      0.0f, 0.5f,  0.8f  // Facing side
+    { //     COORDINATES     /        COLORS        /    TexCoord    /       NORMALS     //
+        -1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 0.0f,		0.0f, 1.0f, 0.0f,
+        -1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		0.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f, -1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 1.0f,		0.0f, 1.0f, 0.0f,
+        1.0f, 0.0f,  1.0f,		0.0f, 0.0f, 0.0f,		1.0f, 0.0f,		0.0f, 1.0f, 0.0f
     };
 
+    // Indices for vertices order
     GLuint indices[] =
     {
-        0, 1, 2, // Bottom side
-        0, 2, 3, // Bottom side
-        4, 6, 5, // Left side
-        7, 9, 8, // Non-facing side
-        10, 12, 11, // Right side
-        13, 15, 14 // Facing side
-    };
-
-    GLfloat cubeVertices[] = {
-        //   Posición         // Color         // TexCoord
-        -0.5f,-0.5f,-0.5f,   1.0f,1.0f,0.3f,  0.0f,0.0f,
-        0.5f,-0.5f,-0.5f,   1.0f,1.0f,1.0f,  1.0f,0.0f,
-        0.5f, 0.5f,-0.5f,   0.6f,0.7f,1.0f,  1.0f,1.0f,
-        -0.5f, 0.5f,-0.5f,   1.0f,1.0f,1.0f,  0.0f,1.0f,
-
-        -0.5f,-0.5f, 0.5f,   1.0f,0.0f,1.0f,  0.0f,0.0f,
-        0.5f,-0.5f, 0.5f,   0.0f,1.0f,1.0f,  1.0f,0.0f,
-        0.5f, 0.5f, 0.5f,   1.0f,1.0f,1.0f,  1.0f,1.0f,
-        -0.5f, 0.5f, 0.5f,   0.3f,0.7f,0.9f,  0.0f,1.0f
-    };
-
-    GLuint cubeIndices[] = {
-        // Cara trasera
-        0,1,2,  2,3,0,
-        // Cara delantera
-        4,5,6,  6,7,4,
-        // Cara izquierda
-        0,4,7,  7,3,0,
-        // Cara derecha
-        1,5,6,  6,2,1,
-        // Cara inferior
-        0,1,5,  5,4,0,
-        // Cara superior
-        3,2,6,  6,7,3
-    };
-
-    GLfloat triangle2Dvert[] =
-    { //     COORDINATES     /        COLORS      /     TexCoord
-        -0.5f, 0.0f,  0.0f,     1.0f, 0.70f, 0.44f,	-0.5f, 0.0f,
-        0.5f, 0.0f, 0.0f,     0.83f, 0.70f, 0.44f,	    0.5f, 0.0f,
-        0.0f, 0.5f, 0.0f,     0.83f, 0.70f, 0.44f,	    0.0f, 0.5f,
-    };
-
-    GLuint triangle2Dind[] =
-    {
         0, 1, 2,
+        0, 2, 3
     };
     
     GLfloat lightVertices[] =
@@ -187,17 +128,17 @@ int main() {
     };
     
     ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
-        shaderProgram.AddUniform("model");
+        /*shaderProgram.AddUniform("model");
         shaderProgram.AddUniform("view");
         shaderProgram.AddUniform("proj");
         shaderProgram.AddUniform("tex0");
         //shaderProgram.AddUniform("useTexture");
         //glUniform1i(shaderProgram.GetUniformLoc("useTexture"), true);
-        shaderProgram.AddUniform("lightColor");
+        shaderProgram.AddUniform("lightColor");*/
     ShaderProgram lightShader{"../shaders/light.vert", "../shaders/light.frag"};
-        lightShader.AddUniform("model");
+        /*lightShader.AddUniform("model");
         lightShader.AddUniform("cameraMatrix");
-        lightShader.AddUniform("lightColor");
+        lightShader.AddUniform("lightColor");*/
      
     VAO ligthVao;
         VBO lightVbo{lightVertices, sizeof(lightVertices), GL_STATIC_DRAW};
@@ -212,25 +153,26 @@ int main() {
         glm::mat4 lightModel = glm::mat4(1.0f);
         lightModel = glm::translate(lightModel, lightPos);
     
-    VAO pyramid_vao;
-        VBO pyramid_vbo{vertices, sizeof(vertices), GL_STATIC_DRAW};
-        EBO pyramid_ebo{indices, sizeof(indices), GL_STATIC_DRAW};
-        pyramid_vao.LinkAttrib(&pyramid_vbo, 0, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)0);
-        pyramid_vao.LinkAttrib(&pyramid_vbo, 1, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
-        pyramid_vao.LinkAttrib(&pyramid_vbo, 2, 2, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-        pyramid_vao.LinkAttrib(&pyramid_vbo, 3, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(8 * sizeof(GLfloat)));
-        pyramid_vao.Unbind();
-        pyramid_ebo.Unbind();
-        pyramid_vbo.Unbind();
+    VAO modelVao;
+        VBO modelVbo{vertices, sizeof(vertices), GL_STATIC_DRAW};
+        EBO modelEbo{indices, sizeof(indices), GL_STATIC_DRAW};
+        modelVao.LinkAttrib(&modelVbo, 0, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)0);
+        modelVao.LinkAttrib(&modelVbo, 1, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
+        modelVao.LinkAttrib(&modelVbo, 2, 2, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
+        modelVao.LinkAttrib(&modelVbo, 3, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(8 * sizeof(GLfloat)));
+        modelVao.Unbind();
+        modelEbo.Unbind();
+        modelVbo.Unbind();
         
-        glm::mat4 pyramidModel = glm::mat4(1.0f);
-        pyramidModel = glm::translate(pyramidModel, glm::vec3{0.0f, 0.0f, 0.0f});
+        glm::vec3 modelPos = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        modelMatrix = glm::translate(modelMatrix, modelPos);
 
 	lightShader.Activate();
 	glUniformMatrix4fv(glGetUniformLocation(lightShader.id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
 	glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
 	shaderProgram.Activate();
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(pyramidModel));
+	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
 	glUniform4f(glGetUniformLocation(shaderProgram.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     glUniform3f(glGetUniformLocation(shaderProgram.id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     
@@ -239,8 +181,11 @@ int main() {
     //glEnable(GL_CULL_FACE);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
-    Texture brickTex{"../textures/bricks.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
-    brickTex.texUnit(&shaderProgram, "tex0", 0);
+    Texture planksTex{"../textures/planks.png", GL_TEXTURE_2D, 0, GL_UNSIGNED_BYTE};
+    planksTex.texUnit(&shaderProgram, "tex0", 0);
+    Texture planksSpec{"../textures/planksSpec.png", GL_TEXTURE_2D, 1, GL_UNSIGNED_BYTE};
+    planksSpec.texUnit(&shaderProgram, "tex1", 1);
+
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
 
     double prev_s = glfwGetTime();
@@ -263,6 +208,10 @@ int main() {
             lightShader.Reload();
         }
 
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) lightPos.y += 0.2f;
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) lightPos.y -= 0.2f;
+        if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) lightPos = camera.Position;
+
         fps_update_countdown -= delta_time;
         if(fps_update_countdown <= 0.0 && delta_time > 0.0) {
             double fps = 1.0 / delta_time;
@@ -271,22 +220,34 @@ int main() {
             fps_update_countdown = 0.1;
         }
 
+        lightModel = glm::translate(glm::mat4(1.0f), lightPos);
+        modelMatrix = glm::translate(modelMatrix, modelPos);
+
+        camera.Inputs(window, delta_time);
+        camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
         //Render {
             glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
-            camera.Inputs(window, delta_time);
-            camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-            shaderProgram.Activate();       
-            glUniform3f(glGetUniformLocation(shaderProgram.id, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
-            //std::cout << camera.Position.x << " " << camera.Position.y << " "<< camera.Position.z << std::endl;
+            //pasar datos al shader principal
+            shaderProgram.Activate();      // PARA UNIFORMS EL SHADER DEBE ESTAR ACTIVO ANTES SIEMPRE
+            glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix)); //objetos
+            glUniform4f(glGetUniformLocation(shaderProgram.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w); //color de la luz
+            glUniform3f(glGetUniformLocation(shaderProgram.id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);  //fuente de la luz
+            glUniform3f(glGetUniformLocation(shaderProgram.id, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z); //camara del jugador
             camera.Matrix(&shaderProgram, "cameraMatrix");
-            pyramid_vao.Bind();
-            brickTex.Bind();
+
+            //render modelo 1
+            modelVao.Bind();
+            planksTex.Bind();
+            planksSpec.Bind();
             glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
             
+            //render luz
             lightShader.Activate(); 
+            glUniformMatrix4fv(glGetUniformLocation(lightShader.id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+	        glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
             camera.Matrix(&lightShader, "cameraMatrix");
             ligthVao.Bind();
             glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
@@ -300,9 +261,11 @@ int main() {
         ligthVao.Delete();
         lightEbo.Delete();
         lightVbo.Delete();
-        pyramid_vao.Delete();
-        pyramid_ebo.Delete();
-        pyramid_vbo.Delete();
+        modelVao.Delete();
+        modelEbo.Delete();
+        modelVbo.Delete();
+        planksTex.Delete();
+        planksSpec.Delete();
 
         glfwDestroyWindow(window);
         glfwTerminate();
