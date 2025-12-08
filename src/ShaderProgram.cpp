@@ -49,17 +49,42 @@ GLuint compileShaderSource(const char* source, GLenum type)
     return shader;
 }
 
-void ShaderProgram::getUniformsAndLinkShaders() {
+void ShaderProgram::create() 
+{
+    int uniformCount = 0;
+
     linkShaders(
         compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
-        compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER));
-    for (auto& [name, location] : uniformLocations) {
-        location = glGetUniformLocation(this->id, name.c_str());
+        compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER)
+    );
+
+    glGetProgramiv(id, GL_ACTIVE_UNIFORMS, &uniformCount);
+
+    for (int i = 0; i < uniformCount; i++) {
+        char name[256];
+        GLsizei length;
+        GLint size;
+        GLenum type;
+
+        glGetActiveUniform(id, i, sizeof(name), &length, &size, &type, name);
+
+        GLint location = glGetUniformLocation(id, name);
+
+        uniformLocations[std::string(name)] = location;
     }
 }
 
 void ShaderProgram::AddUniform(const char* name) {
     uniformLocations[name] = glGetUniformLocation(id, name);
+}
+
+int ShaderProgram::GetUniformLoc(const std::string& name) {
+    auto i = uniformLocations.find(name);
+    if(i == uniformLocations.end()) {
+        std::cout << "[WARNING] unmapped uniform location: " << name << " (in shader id: " << id << ")" << std::endl;
+        return -1;
+    }
+    return i->second;
 }
 
 void ShaderProgram::linkShaders(GLuint vertex_shader, GLuint fragment_shader) 
@@ -89,9 +114,9 @@ ShaderProgram::ShaderProgram(const char* vertex_shader_path, const char* fragmen
     fragPath{fragment_shader_path} 
 {
     try {
-        getUniformsAndLinkShaders();
+        create();
     } catch (std::runtime_error& e) {
-        std::cout << "Error while creating shader program: " << e.what() << std::endl;
+        std::cout << "[ERROR] while creating shader program: " << e.what() << std::endl;
     }
 }
 
@@ -99,9 +124,9 @@ void ShaderProgram::Reload() {
     Delete();
     id = glCreateProgram();
     try {
-        getUniformsAndLinkShaders();
+        create();
     } catch (std::runtime_error& e) {
-        std::cout << "Error while reloading shader program: " << e.what() << std::endl;
+        std::cout << "[ERROR] while reloading shader program: " << e.what() << std::endl;
     }
 }
 

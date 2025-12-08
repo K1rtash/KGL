@@ -19,7 +19,7 @@ vec4 pointLight()
     vec3 lightVec = lightPos - crntPos;
     float dist = length(lightVec);
     float a = 1.00; // ATENUACION cuanto mas grande mas rapido decae la intensidad
-    float b = 0.04; // 
+    float b = 0.05; // 
     float inten = 1.0f / (a * dist * dist + b * dist + 1.0f);
 
     float ambient = 0.20f;

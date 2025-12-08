@@ -11,7 +11,7 @@ class ShaderProgram
     const char* fragPath;
     std::unordered_map<std::string, int>uniformLocations;
     void linkShaders(GLuint vertex_shader, GLuint fragment_shader);
-    void getUniformsAndLinkShaders();
+    void create();
 public:
     GLuint id;
     /**
@@ -22,11 +22,12 @@ public:
      */
     ShaderProgram(const char* vertex_shader_path, const char* fragment_shader_path);
     /**
-     * @brief Get the memory address of a uniform in the shaders
-     * @param name Uniform id
+     * @brief Get the memory address of a uniform in the current shader program
+     * @param name Uniform name
      * @returns Memory address as integer
+     * @note If the uniform can't be located this function will return -1 and throw a warning in the std ostream
      */
-    int GetUniformLoc(const std::string& name) { return uniformLocations[name]; }
+    int GetUniformLoc(const std::string& name);
     /**
      * @brief Locates and saves the memory address of a non-static uniform
      * @param name Uniform id

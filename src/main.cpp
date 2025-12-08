@@ -11,7 +11,6 @@
 #include "ShaderProgram.h"
 #include "Texture.h"
 #include "Camera.h"
-#include "Model.h"
 #include "Sprite.h"
 
 #include <iostream>
@@ -126,19 +125,10 @@ int main() {
         4, 5, 6,
         4, 6, 7
     };
-    
+
     ShaderProgram shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
-        /*shaderProgram.AddUniform("model");
-        shaderProgram.AddUniform("view");
-        shaderProgram.AddUniform("proj");
-        shaderProgram.AddUniform("tex0");
-        //shaderProgram.AddUniform("useTexture");
-        //glUniform1i(shaderProgram.GetUniformLoc("useTexture"), true);
-        shaderProgram.AddUniform("lightColor");*/
     ShaderProgram lightShader{"../shaders/light.vert", "../shaders/light.frag"};
-        /*lightShader.AddUniform("model");
-        lightShader.AddUniform("cameraMatrix");
-        lightShader.AddUniform("lightColor");*/
+    ShaderProgram spriteShader{"../shaders/2d.vert", "../shaders/2d.frag"};
      
     VAO ligthVao;
         VBO lightVbo{lightVertices, sizeof(lightVertices), GL_STATIC_DRAW};
@@ -167,6 +157,11 @@ int main() {
         glm::vec3 modelPos = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::mat4 modelMatrix = glm::mat4(1.0f);
         modelMatrix = glm::translate(modelMatrix, modelPos);
+        
+    Texture planksTex{"../textures/planks.png", GL_TEXTURE_2D, 0, GL_UNSIGNED_BYTE};
+    planksTex.texUnit(&shaderProgram, "tex0", 0);
+    Texture planksSpec{"../textures/planksSpec.png", GL_TEXTURE_2D, 1, GL_UNSIGNED_BYTE};
+    planksSpec.texUnit(&shaderProgram, "tex1", 1);
 
 	lightShader.Activate();
 	glUniformMatrix4fv(glGetUniformLocation(lightShader.id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
@@ -181,10 +176,6 @@ int main() {
     //glEnable(GL_CULL_FACE);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
-    Texture planksTex{"../textures/planks.png", GL_TEXTURE_2D, 0, GL_UNSIGNED_BYTE};
-    planksTex.texUnit(&shaderProgram, "tex0", 0);
-    Texture planksSpec{"../textures/planksSpec.png", GL_TEXTURE_2D, 1, GL_UNSIGNED_BYTE};
-    planksSpec.texUnit(&shaderProgram, "tex1", 1);
 
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
 
@@ -206,6 +197,7 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
             shaderProgram.Reload();
             lightShader.Reload();
+            spriteShader.Reload();
         }
 
         if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) lightPos.y += 0.2f;
@@ -232,10 +224,10 @@ int main() {
 
             //pasar datos al shader principal
             shaderProgram.Activate();      // PARA UNIFORMS EL SHADER DEBE ESTAR ACTIVO ANTES SIEMPRE
-            glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(modelMatrix)); //objetos
-            glUniform4f(glGetUniformLocation(shaderProgram.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w); //color de la luz
-            glUniform3f(glGetUniformLocation(shaderProgram.id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);  //fuente de la luz
-            glUniform3f(glGetUniformLocation(shaderProgram.id, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z); //camara del jugador
+            glUniformMatrix4fv(shaderProgram.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(modelMatrix)); //objetos
+            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w); //color de la luz
+            glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);  //fuente de la luz
+            glUniform3f(shaderProgram.GetUniformLoc("camPos"), camera.Position.x, camera.Position.y, camera.Position.z); //camara del jugador
             camera.Matrix(&shaderProgram, "cameraMatrix");
 
             //render modelo 1
@@ -246,18 +238,19 @@ int main() {
             
             //render luz
             lightShader.Activate(); 
-            glUniformMatrix4fv(glGetUniformLocation(lightShader.id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-	        glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
+            glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+	        glUniform4f(lightShader.GetUniformLoc("lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
             camera.Matrix(&lightShader, "cameraMatrix");
             ligthVao.Bind();
             glDrawElements(GL_TRIANGLES, sizeof(lightIndices) / sizeof(int), GL_UNSIGNED_INT, 0);
-            
+
         // } Render
             glfwSwapBuffers(window);
         }
         
         shaderProgram.Delete();
         lightShader.Delete();
+        spriteShader.Delete();
         ligthVao.Delete();
         lightEbo.Delete();
         lightVbo.Delete();

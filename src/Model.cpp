@@ -36,13 +36,8 @@ void Model::Draw() {
     glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
 
     vao.Bind();
-    if (texture != nullptr) {
-        texture->texUnit(shader, "tex0", 0);
-        texture->Bind();
-        glUniform1i(shader->GetUniformLoc("useTexture"), true);
-    } else {
-        glUniform1i(shader->GetUniformLoc("useTexture"), false);
-    }
+    texture->texUnit(shader, "tex0", 0);
+    texture->Bind();
 
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }
@@ -51,9 +46,8 @@ void Model::Delete() {
     vbo.Delete();
     ebo.Delete();
     vao.Delete();
-    if (texture != nullptr) texture->Delete(); 
 }
 
 Model::~Model() {
-    Delete();
+    //Delete();
 }
