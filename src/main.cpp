@@ -108,7 +108,6 @@ int main() {
         0.0f, 0.8f,  0.0f,     0.92f, 0.86f, 0.76f,	 2.5f, 5.0f,      0.0f, 0.5f,  0.8f  // Facing side
     };
 
-
     GLuint indices[] =
     {
         0, 1, 2, // Bottom side
@@ -209,7 +208,7 @@ int main() {
         lightVbo.Unbind();
     
         glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-        glm::vec3 lightPos = glm::vec3(1.0f, 1.0f, 1.0f);
+        glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
         glm::mat4 lightModel = glm::mat4(1.0f);
         lightModel = glm::translate(lightModel, lightPos);
     
@@ -219,7 +218,7 @@ int main() {
         pyramid_vao.LinkAttrib(&pyramid_vbo, 0, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)0);
         pyramid_vao.LinkAttrib(&pyramid_vbo, 1, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(3 * sizeof(GLfloat)));
         pyramid_vao.LinkAttrib(&pyramid_vbo, 2, 2, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(6 * sizeof(GLfloat)));
-        pyramid_vao.LinkAttrib(&pyramid_vbo, 3, 2, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(8 * sizeof(GLfloat)));
+        pyramid_vao.LinkAttrib(&pyramid_vbo, 3, 3, GL_FLOAT, 11 * sizeof(GLfloat), (void*)(8 * sizeof(GLfloat)));
         pyramid_vao.Unbind();
         pyramid_ebo.Unbind();
         pyramid_vbo.Unbind();
@@ -233,7 +232,7 @@ int main() {
 	shaderProgram.Activate();
 	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(pyramidModel));
 	glUniform4f(glGetUniformLocation(shaderProgram.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-
+    glUniform3f(glGetUniformLocation(shaderProgram.id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -278,12 +277,12 @@ int main() {
             
             camera.Inputs(window, delta_time);
             camera.updateMatrix(45.0f, 0.1f, 100.0f);
-            lightColor = glm::vec4(
+            /*lightColor = glm::vec4(
                 tan(temp_time_passed * 0.07f),
                 cos(temp_time_passed * 0.06f),
                 sin(temp_time_passed * 0.05f), // más lento
                 1.0f
-            );
+            );*/
 
             shaderProgram.Activate();       
             camera.Matrix(&shaderProgram, "cameraMatrix");
