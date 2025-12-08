@@ -31,13 +31,23 @@ public:
      */
     void Delete();
     /**
-     * @brief Defines how to use a layout of elemts as an attribute that will be passed to the shader
-     * @param vbo Vertex Buffer Object that contains the vertices data
-     * @param layout Location of the shader IN variable
-     * @param numComponents Number of elements per attribute
-     * @param type Data type of the elements
-     * @param stride Lenght in bytes of the attribute
-     * @param offset First element to start the attribute, 0 being the start of the array
+     * @brief Links a vertex attribute from a VBO to a shader input variable.
+     *
+     * This function configures how the vertex data stored in a VBO is interpreted
+     * and associates it with a specific attribute location in the shader program
+     * using glVertexAttribPointer. It is essential for defining the vertex layout
+     * (e.g., positions, colors, normals, texture coordinates) that will be passed
+     * into the graphics pipeline.
+     *
+     * @param vbo           Pointer to the Vertex Buffer Object containing vertex data.
+     * @param layout        Attribute location index in the shader (obtained via glGetAttribLocation).
+     * @param numComponents Number of components per attribute (e.g., 3 for vec3, 2 for vec2).
+     * @param type          Data type of each component (e.g., GL_FLOAT, GL_INT).
+     * @param stride        Byte offset between consecutive attributes in the VBO.
+     * @param offset        Offset in the buffer where the attribute data begins.
+     *
+     * @note The VBO must be bound before calling this function.
+     * @see glVertexAttribPointer, glEnableVertexAttribArray
      */
     void LinkAttrib(VBO* vbo, GLuint layout, GLuint numComponents, GLenum type, GLsizeiptr stride, void* offset);
 };

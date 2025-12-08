@@ -53,8 +53,10 @@ void ShaderProgram::getUniformsAndLinkShaders() {
     linkShaders(
         compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
         compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER));
-    for (auto& [name, location] : uniformLocations)
+    for (auto& [name, location] : uniformLocations) {
         location = glGetUniformLocation(this->id, name.c_str());
+        std::cout << "uniform locationsfor shaderid: " << id << " -> " << "name: " << name << " loc: " << location << std::endl;
+    }
 }
 
 void ShaderProgram::AddUniform(const char* name) {
