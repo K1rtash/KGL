@@ -2,11 +2,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath) : 
+Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture) : 
     vbo(vertices, vertSize, GL_STATIC_DRAW),
     ebo(indices, indSize, GL_STATIC_DRAW),
-    texture(texPath, GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE),
-    shader(shader)
+    shader(shader),
+    texture(texture)
 {
     vao.Bind();
     vao.LinkAttrib(&vbo, 0, 3, GL_FLOAT, 8 * sizeof(float), (void*)0);
@@ -34,13 +34,26 @@ void Model::setRotation(float angle, const glm::vec3& axis) {
 
 void Model::Draw() {
     glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
     vao.Bind();
-    texture.Bind();
+    if (texture != nullptr) {
+        texture->texUnit(shader, "tex0", 0);
+        texture->Bind();
+        glUniform1i(shader->GetUniformLoc("useTexture"), true);
+    } else {
+        glUniform1i(shader->GetUniformLoc("useTexture"), false);
+    }
+
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }
+
 void Model::Delete() {
     vbo.Delete();
     ebo.Delete();
     vao.Delete();
-    texture.Delete();
+    if (texture != nullptr) texture->Delete(); 
+}
+
+Model::~Model() {
+    Delete();
 }

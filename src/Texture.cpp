@@ -50,11 +50,16 @@ void Texture::Unbind() {
 }
 void Texture::Delete() {
     glDeleteTextures(1, &id);
+    id = 0;
 }
 
 void Texture::texUnit(ShaderProgram* shader, const char* uniform, GLuint unit) 
 {
     //GLuint texUni = glGetUniformLocation(shader->id, uniform); // Gets the location of the uniform
-    //shader->Activate(); // Shader needs to be activated before changing the value of a uniform
-    //glUniform1i(texUni, unit); // Sets the value of the uniform
+    shader->Activate(); // Shader needs to be activated before changing the value of a uniform
+    glUniform1i(shader->GetUniformLoc(uniform), unit); // Sets the value of the uniform
+}
+
+Texture::~Texture() {
+    Delete();
 }

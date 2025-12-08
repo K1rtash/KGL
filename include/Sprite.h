@@ -21,7 +21,7 @@ class Sprite
     VAO vao;
     VBO vbo;
     EBO ebo;
-    Texture texture;
+    Texture* texture;
     GLsizei indexCount;
     ShaderProgram* shader;
     struct Transforms {
@@ -43,14 +43,14 @@ public:
      * @param indices Array of indices defining the model geometry
      * @param indSize Size of the array of indices
      * @param shader Shader program to use in this element
-     * @param texPath Path to the model's texture
+     * @param texture Texture object pointer
      * @param width Width in pixels
      * @param height Height in pixels
      * @param screenWidth Logical screen width in pixels
      * @param screenHeight Logical screen height in pixels
-     * @warning Will throw std::runtime_error if the given vertices, indices, or texture are incorrect
+     * @warning Will throw std::runtime_error if the given vertices or indices are incorrect
      */
-    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath, int width, int height, float screenWidth, float screenHeight);
+    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight);
     void setPosition(float x, float y);
     void setScale(float s);
     void setRotation(float angle);

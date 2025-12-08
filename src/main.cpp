@@ -106,10 +106,10 @@ int main() {
 
     GLfloat cubeVertices[] = {
         //   Posición         // Color         // TexCoord
-        -0.5f,-0.5f,-0.5f,   1.0f,0.0f,0.0f,  0.0f,0.0f,
-        0.5f,-0.5f,-0.5f,   0.0f,1.0f,0.0f,  1.0f,0.0f,
-        0.5f, 0.5f,-0.5f,   0.0f,0.0f,1.0f,  1.0f,1.0f,
-        -0.5f, 0.5f,-0.5f,   1.0f,1.0f,0.0f,  0.0f,1.0f,
+        -0.5f,-0.5f,-0.5f,   1.0f,1.0f,0.3f,  0.0f,0.0f,
+        0.5f,-0.5f,-0.5f,   1.0f,1.0f,1.0f,  1.0f,0.0f,
+        0.5f, 0.5f,-0.5f,   0.6f,0.7f,1.0f,  1.0f,1.0f,
+        -0.5f, 0.5f,-0.5f,   1.0f,1.0f,1.0f,  0.0f,1.0f,
 
         -0.5f,-0.5f, 0.5f,   1.0f,0.0f,1.0f,  0.0f,0.0f,
         0.5f,-0.5f, 0.5f,   0.0f,1.0f,1.0f,  1.0f,0.0f,
@@ -178,6 +178,7 @@ int main() {
     shaderProgram.AddUniform("view");
     shaderProgram.AddUniform("proj");
     shaderProgram.AddUniform("tex0");
+    shaderProgram.AddUniform("useTexture");
     /* NUEVO <.--.> */    
     VAO ligthVao;
     ligthVao.Bind();
@@ -189,7 +190,7 @@ int main() {
     lightVbo.Unbind();
 
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
+	glm::vec3 lightPos = glm::vec3(1.0f, 1.0f, 1.0f);
 	glm::mat4 lightModel = glm::mat4(1.0f);
 	lightModel = glm::translate(lightModel, lightPos);
 
@@ -200,15 +201,20 @@ int main() {
     glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
 	glUniform4f(lightShader.GetUniformLoc("lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
     /* NUEVO <.xx.> */
-    
-    Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), &shaderProgram, "../textures/verduras.png"};
-    pyramid.setPosition(glm::vec3(-1.0f, 0.0f, -2.0f));
 
-    Model cube{cubeVertices, sizeof(cubeVertices), cubeIndices, sizeof(cubeIndices), &shaderProgram, "../textures/bricks.png"};
+    Texture verdurasTex{"../textures/verduras.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
+    verdurasTex.texUnit(&shaderProgram, "tex0", 0);
+    Texture brickTex{"../textures/bricks.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE};
+    brickTex.texUnit(&shaderProgram, "tex0", 1);
+    
+    Model pyramid{vertices, sizeof(vertices), indices, sizeof(indices), &shaderProgram, &brickTex};
+    pyramid.setPosition(glm::vec3(0.0f, 0.0f, 0.0f));
+    
+    Model cube{cubeVertices, sizeof(cubeVertices), cubeIndices, sizeof(cubeIndices), &shaderProgram, nullptr};
     cube.setPosition(glm::vec3(1.0f, 0.0f, -2.0f));
     cube.setScale(glm::vec3(0.5f));
 
-    Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, "../textures/verduras.png", 100, 170, windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT};
+    Sprite modelo2d{triangle2Dvert, sizeof(triangle2Dvert), triangle2Dind, sizeof(triangle2Dind), &shaderProgram, &verdurasTex, 100, 170, windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT};
     modelo2d.setPosition(-900.0f, 370.0f);
     modelo2d.setRotation(10.0f);
     modelo2d.setScale(2.0f);
@@ -255,6 +261,7 @@ int main() {
             shaderProgram.Activate();       
             camera.Matrix(&shaderProgram, "cameraMatrix");
             pyramid.Draw();
+            cube.setRotation(cos((double)temp_time_passed * 0.05), glm::vec3(0.5, 0.5, 0.5));
             cube.Draw();
             modelo2d.setRotation(temp_time_passed * 0.5f);
             modelo2d.setScale(std::max(0.5, sin((double)temp_time_passed * 0.2)));
@@ -275,7 +282,7 @@ int main() {
         }
         
         pyramid.Delete();
-        cube.Delete();
+        //cube.Delete();
         shaderProgram.Delete();
         lightShader.Delete();
         ligthVao.Delete();

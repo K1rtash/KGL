@@ -3,10 +3,10 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-Sprite::Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize,  ShaderProgram* shader, const char* texPath, int width, int height, float screenWidth, float screenHeight) : 
+Sprite::Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize,  ShaderProgram* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight) : 
     vbo(vertices, vertSize, GL_STATIC_DRAW),
     ebo(indices, indSize, GL_STATIC_DRAW),
-    texture(texPath, GL_TEXTURE_2D, GL_TEXTURE0, GL_UNSIGNED_BYTE),
+    texture(texture),
     shader(shader), 
     width_px(width), height_px(height),
     LOGICAL_SCREEN_WIDTH(screenWidth), LOGICAL_SCREEN_HEIGHT(screenHeight)
@@ -52,11 +52,17 @@ void Sprite::Draw() {
 
     glUniformMatrix4fv(shader->GetUniformLoc("cameraMatrix"), 1, GL_FALSE, glm::value_ptr(proj * view));
     glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(model));
-    //glUniformMatrix4fv(shader->GetUniformLoc("view"), 1, GL_FALSE, glm::value_ptr(view));
-    //glUniformMatrix4fv(shader->GetUniformLoc("proj"), 1, GL_FALSE, glm::value_ptr(proj));
 
     vao.Bind();
-    texture.Bind();
+
+    if (texture != nullptr) {
+        texture->texUnit(shader, "tex0", 0);
+        texture->Bind();
+        glUniform1i(shader->GetUniformLoc("useTexture"), true);
+    } else {
+        glUniform1i(shader->GetUniformLoc("useTexture"), false);
+    }
+
     glDrawElements(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0);
 }
 
@@ -64,5 +70,5 @@ void Sprite::Delete() {
     vbo.Delete();
     ebo.Delete();
     vao.Delete();
-    texture.Delete();
+    if(texture != nullptr) texture->Delete();
 }

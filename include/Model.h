@@ -21,7 +21,7 @@ public:
     VAO vao;
     VBO vbo;
     EBO ebo;
-    Texture texture;
+    Texture* texture;
     glm::mat4 modelMatrix;
     GLsizei indexCount;
     ShaderProgram* shader;
@@ -33,14 +33,14 @@ public:
      * @param indices Array of indices defining the model geometry
      * @param indSize Size of the array of indices
      * @param shader Shader program to use in this element
-     * @param texPath Path to the model's texture
-     * @warning Will throw std::runtime_error if the given vertices, indices, or texture are incorrect 
-     * @see Texture
-     * @see VBO
-     * @see VAO
-     * @see EBO
+     * @param texture Texture object pointer
+     * @warning Will throw std::runtime_error if the given vertices or indices 
      */
-    Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, const char* texPath);
+    Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture);
+    /**
+     * @brief Calls Delete()
+     */
+    ~Model();
     /**
      * @brief Translates the object to a given point in the world
      * @param pos 3-dimensional vector for X, Y & Z coordinates
