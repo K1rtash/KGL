@@ -1,9 +1,9 @@
 #include "VBO.h"
 
-VBO::VBO(GLfloat* vertices, size_t size, GLenum usage) : usage{usage} {
+VBO::VBO(std::vector<Vertex>& vertices) {
     glGenBuffers(1, &id);
     Bind();
-	glBufferData(GL_ARRAY_BUFFER, size, vertices, usage);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 }
 
 void VBO::Bind() {

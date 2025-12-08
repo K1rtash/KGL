@@ -5,7 +5,7 @@
 #include <string>
 #include <unordered_map>
 
-class ShaderProgram 
+class Shader 
 {
     const char* vertPath;
     const char* fragPath;
@@ -20,7 +20,7 @@ public:
      * @param fragment_shader_path Source file in GLSL
      * @warning Errors in the shaders will throw std::runtime_error
      */
-    ShaderProgram(const char* vertex_shader_path, const char* fragment_shader_path);
+    Shader(const char* vertex_shader_path, const char* fragment_shader_path);
     /**
      * @brief Get the memory address of a uniform in the current shader program
      * @param name Uniform name

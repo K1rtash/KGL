@@ -2,7 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture) : 
+Model::Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, Shader* shader, Texture* texture) : 
     vbo(vertices, vertSize, GL_STATIC_DRAW),
     ebo(indices, indSize, GL_STATIC_DRAW),
     shader(shader),

@@ -23,7 +23,7 @@ class Sprite
     EBO ebo;
     Texture* texture;
     GLsizei indexCount;
-    ShaderProgram* shader;
+    Shader* shader;
     struct Transforms {
         float 
         x = 0.0f, y = 0.0f, 
@@ -50,7 +50,7 @@ public:
      * @param screenHeight Logical screen height in pixels
      * @warning Will throw std::runtime_error if the given vertices or indices are incorrect
      */
-    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight);
+    Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, Shader* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight);
     void setPosition(float x, float y);
     void setScale(float s);
     void setRotation(float angle);

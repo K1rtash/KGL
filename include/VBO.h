@@ -2,6 +2,16 @@
 #define VBO_CLASS
 
 #include <glad/glad.h>
+#include <glm/glm.hpp>
+#include <vector>
+
+struct Vertex
+{
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec3 color;
+    glm::vec2 texUV;
+};
 
 /**
  * @class VBO
@@ -17,12 +27,11 @@ public:
     GLuint id;
     /**
      * @brief Creates a new Vertex Buffer Object
-     * @param vertices Array of vertices 
-     * @param size Size in bytes of the array
+     * @param vertices Array of vertices
      * @param usage OpenGL usage mode of this VBO
      * @note usage may be GL_STATIC_DRAW if the vertices will not change or GL_DYNAMIC_DRAW if the vertices will change often
      */
-    VBO(GLfloat* vertices, size_t size, GLenum usage);
+    VBO(std::vector<Vertex>& vertices);
     /**
      * @brief Makes OpenGL use this object as the current VBO for all function calls
      */

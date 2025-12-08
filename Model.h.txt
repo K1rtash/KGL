@@ -24,7 +24,7 @@ public:
     Texture* texture;
     glm::mat4 modelMatrix;
     GLsizei indexCount;
-    ShaderProgram* shader;
+    Shader* shader;
 
     /**
      * @brief Creates a new 3D model
@@ -36,7 +36,7 @@ public:
      * @param texture Texture object pointer
      * @warning Will throw std::runtime_error if the given vertices or indices 
      */
-    Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, ShaderProgram* shader, Texture* texture);
+    Model(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize, Shader* shader, Texture* texture);
     /**
      * @brief Calls Delete()
      */

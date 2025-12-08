@@ -3,7 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-Sprite::Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize,  ShaderProgram* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight) : 
+Sprite::Sprite(GLfloat* vertices, size_t vertSize, GLuint* indices, size_t indSize,  Shader* shader, Texture* texture, int width, int height, float screenWidth, float screenHeight) : 
     vbo(vertices, vertSize, GL_STATIC_DRAW),
     ebo(indices, indSize, GL_STATIC_DRAW),
     texture(texture),

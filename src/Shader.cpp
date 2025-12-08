@@ -1,4 +1,4 @@
-#include "ShaderProgram.h"
+#include "Shader.h"
 #include <stdexcept>
 #include <iostream>
 #include <format>
@@ -49,7 +49,7 @@ GLuint compileShaderSource(const char* source, GLenum type)
     return shader;
 }
 
-void ShaderProgram::create() 
+void Shader::create() 
 {
     int uniformCount = 0;
 
@@ -74,11 +74,11 @@ void ShaderProgram::create()
     }
 }
 
-void ShaderProgram::AddUniform(const char* name) {
+void Shader::AddUniform(const char* name) {
     uniformLocations[name] = glGetUniformLocation(id, name);
 }
 
-int ShaderProgram::GetUniformLoc(const std::string& name) {
+int Shader::GetUniformLoc(const std::string& name) {
     auto i = uniformLocations.find(name);
     if(i == uniformLocations.end()) {
         std::cout << "[WARNING] unmapped uniform location: " << name << " (in shader id: " << id << ")" << std::endl;
@@ -87,7 +87,7 @@ int ShaderProgram::GetUniformLoc(const std::string& name) {
     return i->second;
 }
 
-void ShaderProgram::linkShaders(GLuint vertex_shader, GLuint fragment_shader) 
+void Shader::linkShaders(GLuint vertex_shader, GLuint fragment_shader) 
 {
     glAttachShader(id, vertex_shader);
     glAttachShader(id, fragment_shader);
@@ -108,7 +108,7 @@ void ShaderProgram::linkShaders(GLuint vertex_shader, GLuint fragment_shader)
     glUseProgram(id);
 }
 
-ShaderProgram::ShaderProgram(const char* vertex_shader_path, const char* fragment_shader_path) : 
+Shader::Shader(const char* vertex_shader_path, const char* fragment_shader_path) : 
     id{glCreateProgram()}, 
     vertPath{vertex_shader_path}, 
     fragPath{fragment_shader_path} 
@@ -118,9 +118,14 @@ ShaderProgram::ShaderProgram(const char* vertex_shader_path, const char* fragmen
     } catch (std::runtime_error& e) {
         std::cout << "[ERROR] while creating shader program: " << e.what() << std::endl;
     }
+
+    for (auto& [name, loc] : uniformLocations) {
+    std::cout << "Uniform: " << name << " -> " << loc << std::endl;
 }
 
-void ShaderProgram::Reload() {
+}
+
+void Shader::Reload() {
     Delete();
     id = glCreateProgram();
     try {
@@ -130,12 +135,12 @@ void ShaderProgram::Reload() {
     }
 }
 
-void ShaderProgram::Delete() {
+void Shader::Delete() {
     glUseProgram(0);
     glDeleteProgram(id);
     id = 0;
 }
 
-void ShaderProgram::Activate() {
+void Shader::Activate() {
     glUseProgram(id);
 }
