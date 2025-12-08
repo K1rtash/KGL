@@ -14,13 +14,19 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 uniform vec3 camPos;
 
-void main()
+vec4 pointLight() 
 {
+    vec3 lightVec = lightPos - crntPos;
+    float dist = length(lightVec);
+    float a = 1.00; // ATENUACION cuanto mas grande mas rapido decae la intensidad
+    float b = 0.04; // 
+    float inten = 1.0f / (a * dist * dist + b * dist + 1.0f);
+
     float ambient = 0.20f;
 
     //diffuse lightning
     vec3 normal = normalize(Normal);
-    vec3 lightDirection = normalize(lightPos - crntPos);
+    vec3 lightDirection = normalize(lightVec);
     float diffuse = max(dot(normal, lightDirection), 0.0f);
 
     // specular lighting
@@ -30,6 +36,10 @@ void main()
 	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.0f), 16);
 	float specular = specAmount * specularLight;
 
-    FragColor = texture(tex0, texCoord) * lightColor * (diffuse + ambient) + texture(tex1, texCoord).r * specular;
-    FragColor.a = 1.0f;
+    return (texture(tex0, texCoord) * (diffuse * inten + ambient) + texture(tex1, texCoord).r * specular * inten) * lightColor;
+}
+
+void main()
+{
+    FragColor = pointLight();
 }
