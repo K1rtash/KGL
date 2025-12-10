@@ -31,7 +31,7 @@ public:
      * @param usage OpenGL usage mode of this VBO
      * @note usage may be GL_STATIC_DRAW if the vertices will not change or GL_DYNAMIC_DRAW if the vertices will change often
      */
-    VBO(std::vector<Vertex>& vertices);
+    VBO(std::vector<Vertex>* vertices);
     /**
      * @brief Makes OpenGL use this object as the current VBO for all function calls
      */

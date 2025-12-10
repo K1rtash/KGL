@@ -131,12 +131,12 @@ int main() {
 	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
 	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
-	Mesh floor(verts, ind, tex);
+	Mesh floor(&verts, &ind, &tex);
     
     Shader lightShader{"../shaders/light.vert", "../shaders/light.frag"};
 	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
-    Mesh light(lightVerts, lightInd, tex);
+    Mesh light(&lightVerts, &lightInd, &tex);
     
 
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -203,8 +203,8 @@ int main() {
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         
-        floor.Draw(shaderProgram, camera);
-        light.Draw(lightShader, camera);
+        floor.Draw(&shaderProgram, &camera);
+        light.Draw(&lightShader, &camera);
             
         glfwSwapBuffers(window);
     }

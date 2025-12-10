@@ -1,6 +1,6 @@
 #include "Mesh.h"
 
-Mesh::Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Texture>& textures) : vertices{vertices}, indices{indices}, textures{textures}
+Mesh::Mesh(vector<Vertex>* vertices, vector<GLuint>* indices, vector<Texture>* textures) : vertices{*vertices}, indices{*indices}, textures{*textures}
 {
     vao.Bind();
     VBO vbo{vertices};
@@ -43,10 +43,10 @@ Mesh::Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Texture>& t
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }*/
 
-void Mesh::Draw(Shader& shader, Camera& camera)
+void Mesh::Draw(Shader* shader, Camera* camera)
 {
 	// Bind shader to be able to access uniforms
-	shader.Activate();
+	shader->Activate();
 	vao.Bind();
 
 	// Keep track of how many of each type of textures we have
@@ -65,14 +65,12 @@ void Mesh::Draw(Shader& shader, Camera& camera)
 		{
 			num = std::to_string(numSpecular++);
 		}
-		//textures[i].texUnit(&shader, (type + num).c_str(), i);
         textures[i].texUnit(shader, (type + num).c_str(), i);
-        //glUniform1i(glGetUniformLocation(shader.id, (type + num).c_str()), i);
 		textures[i].Bind();
 	}
-	// Take care of the camera Matrix
-	glUniform3f(glGetUniformLocation(shader.id, "camPos"), camera.Position.x, camera.Position.y, camera.Position.z);
-	camera.Matrix(shader, "camMatrix");
+
+	glUniform3f(glGetUniformLocation(shader->id, "camPos"), camera->Position.x, camera->Position.y, camera->Position.z);
+	camera->Matrix(shader, "camMatrix");
 
 	// Draw the actual mesh
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

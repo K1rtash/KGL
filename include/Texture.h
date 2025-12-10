@@ -45,6 +45,6 @@ public:
     /**
      * @note to-do
      */
-    void texUnit(Shader& shader, const char* uniform, GLuint unit);
+    void texUnit(Shader* shader, const char* uniform, GLuint unit);
 };
 #endif

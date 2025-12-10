@@ -23,7 +23,7 @@ public:
      * @param usage OpenGL usage mode of this EBO
      * @note usage may be GL_STATIC_DRAW if the indices will not change or GL_DYNAMIC_DRAW if the indices will change often
      */
-    EBO(std::vector<GLuint>& indices);
+    EBO(std::vector<GLuint>* indices);
     /**
      * @brief Makes OpenGL use this object as the current EBO for all function calls
      */

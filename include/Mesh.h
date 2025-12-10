@@ -28,8 +28,7 @@ public:
 
     VAO vao;
 
-    Mesh(vector<Vertex>& vertices, vector<GLuint>& indices, vector<Texture>& textures);
-    //void Draw(Shader* shader, Camera* camera);
-    void Draw(Shader& shader, Camera& camera);
+    Mesh(vector<Vertex>* vertices, vector<GLuint>* indices, vector<Texture>* textures);
+    void Draw(Shader* shader, Camera* camera);
 };
 #endif

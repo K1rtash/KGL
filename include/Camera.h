@@ -48,7 +48,7 @@ public:
      * @brief Sends uniform data to the current shader program
      * @param uniform
      */
-    void Matrix(Shader& shader, const char* uniform);
+    void Matrix(Shader* shader, const char* uniform);
 
     /**
      * @brief Handles user-input
