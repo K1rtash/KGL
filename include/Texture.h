@@ -21,8 +21,8 @@ public:
      * @param path Path to the asset
      * @param texType to-do
      * @param slot OpenGL's slot to save a texture (usually 0)
-     * @param pixelType Data type of the texture pixels (as in unsigned byte)
-     * @warning Will throw a std::runtime_error if the path cant be resolved or if the image format is not supported
+     * @param format GL's texture color channel format, as in GL_RGB or GL_RGBA
+     * @param pixelType Data type of the texture pixels, as in GL_UNSIGNED_BYTE
      * @note Supported image formats: .PNG .JPG && all supported by stb_image
      */
     Texture(const char* path, const char* texType, GLuint slot, GLenum format, GLenum pixelType);
@@ -43,7 +43,10 @@ public:
      */
     void Delete();
     /**
-     * @note to-do
+     * @brief Modify a SAMPLER tipe uniform
+     * @param shader Target shader program
+     * @param uniform Uniform name
+     * @param unit Texture unit
      */
     void texUnit(Shader* shader, const char* uniform, GLuint unit);
 };

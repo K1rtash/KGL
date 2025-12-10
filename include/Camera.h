@@ -14,7 +14,7 @@
 /**
  * @class Camera
  * @brief Basic 3D camera with perspective view
- * @see Model
+ * @see Mesh
  */
 class Camera 
 {
@@ -45,8 +45,11 @@ public:
     void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
 
     /**
-     * @brief Sends uniform data to the current shader program
-     * @param uniform
+     * @brief Sends camera data to the current shader program
+     *
+     * Data sent is the product of the projection and view matrices
+     * @param shader Target shader program
+     * @param uniform Uniform name
      */
     void Matrix(Shader* shader, const char* uniform);
 

@@ -15,38 +15,9 @@ Mesh::Mesh(vector<Vertex>* vertices, vector<GLuint>* indices, vector<Texture>* t
     vbo.Unbind();
 }
 
-/*void Mesh::Draw(Shader* shader, Camera* camera)
-{
-    shader->Activate();
-    vao.Bind();
-
-    unsigned int numDiffuse = 0;
-    unsigned int numSpecular = 0;
-
-    for(unsigned int i = 0; i < textures.size(); i++) 
-    {
-        std::string num;
-        std::string type = textures[i].type;
-        if(type == "diffuse") {
-            num = std::to_string(numDiffuse++);
-        }
-        else if (type == "specular") {
-            num = std::to_string(numSpecular++);
-        }
-        textures[i].texUnit(shader, (type + num).c_str(), i);
-        textures[i].Bind();
-    }
-
-    glUniform3f(shader->GetUniformLoc("camPos"), camera->Position.x, camera->Position.y, camera->Position.z); //camara del jugador
-    camera->Matrix(shader, "cameraMatrix");
-
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-}*/
-
 void Mesh::Draw(Shader* shader, Camera* camera)
 {
-	// Bind shader to be able to access uniforms
-	shader->Activate();
+	shader->Activate();// Bind shader to be able to access uniforms
 	vao.Bind();
 
 	// Keep track of how many of each type of textures we have
@@ -69,7 +40,7 @@ void Mesh::Draw(Shader* shader, Camera* camera)
 		textures[i].Bind();
 	}
 
-	glUniform3f(glGetUniformLocation(shader->id, "camPos"), camera->Position.x, camera->Position.y, camera->Position.z);
+	glUniform3f(shader->GetUniformLoc("camPos"), camera->Position.x, camera->Position.y, camera->Position.z);
 	camera->Matrix(shader, "camMatrix");
 
 	// Draw the actual mesh

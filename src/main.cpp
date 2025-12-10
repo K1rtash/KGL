@@ -20,6 +20,7 @@ struct KGL_WindowConfig {
 void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
+void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 
 int main() {
     KGL_WindowConfig windowConfig;
@@ -126,14 +127,14 @@ int main() {
         Texture{"../textures/planksSpec.png", "specular", 1, GL_RED, GL_UNSIGNED_BYTE}
     };
 
-    Shader shaderProgram{"../shaders/basic.vert", "../shaders/basic.frag"};
+    Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
 
 	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
 	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
 	Mesh floor(&verts, &ind, &tex);
     
-    Shader lightShader{"../shaders/light.vert", "../shaders/light.frag"};
+    Shader lightShader{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
 	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
     Mesh light(&lightVerts, &lightInd, &tex);
@@ -149,13 +150,6 @@ int main() {
     objectModel = glm::translate(objectModel, objectPos);
         
 
-	lightShader.Activate();
-	glUniformMatrix4fv(glGetUniformLocation(lightShader.id, "model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-	glUniform4f(glGetUniformLocation(lightShader.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-	shaderProgram.Activate();
-	glUniformMatrix4fv(glGetUniformLocation(shaderProgram.id, "model"), 1, GL_FALSE, glm::value_ptr(objectModel));
-	glUniform4f(glGetUniformLocation(shaderProgram.id, "lightColor"), lightColor.x, lightColor.y, lightColor.z, lightColor.w);
-    glUniform3f(glGetUniformLocation(shaderProgram.id, "lightPos"), lightPos.x, lightPos.y, lightPos.z);
     
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -169,6 +163,7 @@ int main() {
     double prev_s = glfwGetTime();
     double fps_update_countdown = 0.0;
     int temp_time_passed = 0;
+    float h = 0, s = 0.0, v = 1.0;
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
@@ -186,9 +181,29 @@ int main() {
             shaderProgram.Reload();
             lightShader.Reload();
         }
-        
-        if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) lightPos = camera.Position;
-        
+        if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+            lightPos = camera.Position;
+            lightModel = glm::translate(glm::mat4(1.0f), camera.Position);
+        }
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            s += 0.03f;
+            if(s > 1.0f) s = 1.0f;  
+        }        
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            s -= 0.03f;
+            if(s < 0.0f) s = 0.0f;  
+        }
+        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            h -= 1.0f;
+            if(h < 0.0f) h = 0.0f;  
+        }        
+        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            h += 1.0f;
+            if(h > 360.0f) h = 360.0f;  
+        }
+        if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+
+
         fps_update_countdown -= delta_time;
         if(fps_update_countdown <= 0.0 && delta_time > 0.0) {
             double fps = 1.0 / delta_time;
@@ -199,6 +214,19 @@ int main() {
         
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        float lr = 0, lg = 0, lb =0;
+        HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
+        std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
+
+        lightShader.Activate();
+        glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+        glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+        shaderProgram.Activate();
+        glUniformMatrix4fv(shaderProgram.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(objectModel));
+        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+        glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
+
 
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
@@ -248,4 +276,21 @@ void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT)
     }
 
     glViewport(viewportX, viewportY, viewportW, viewportH);
+}
+
+void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
+    int i = int(h * 6);
+    float f = h * 6 - i;
+    float p = v * (1 - s);
+    float q = v * (1 - f * s);
+    float t = v * (1 - (1 - f) * s);
+
+    switch(i % 6) {
+        case 0: r = v; g = t; b = p; break;
+        case 1: r = q; g = v; b = p; break;
+        case 2: r = p; g = v; b = t; break;
+        case 3: r = p; g = q; b = v; break;
+        case 4: r = t; g = p; b = v; break;
+        case 5: r = v; g = p; b = q; break;
+    }
 }
