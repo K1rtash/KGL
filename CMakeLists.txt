@@ -3,17 +3,21 @@ project(opengl)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(GLAD_DIR C:/DEV/SDK/Headers/glad)
-set(GLFW_DIR C:/DEV/SDK/Static/GLFW)
-set(GLM_DIR C:/DEV/SDK/Static/glm)
+set(GLAD_DIR "C:/DEV/SDK/Headers/glad")
+set(GLFW_DIR "C:/DEV/SDK/Static/GLFW")
+set(GLM_DIR "C:/DEV/SDK/Static/glm")
+set(JSON_DIR "C:/DEV/SDK/Headers/nlohmann")
 
 # Esto es lo único que necesitas para que funcione find_package
-list(APPEND CMAKE_PREFIX_PATH "${GLFW_DIR}")
-list(APPEND CMAKE_PREFIX_PATH "${GLAD_DIR}")
+list(APPEND CMAKE_PREFIX_PATH ${GLFW_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${GLAD_DIR})
 
 find_package(glfw3 REQUIRED CONFIG)
 find_package(OpenGL REQUIRED)
-include_directories(${GLAD_DIR}/include ${GLM_DIR}/include ${PROJECT_SOURCE_DIR}/include)
+include_directories(
+    ${PROJECT_SOURCE_DIR}/include
+    ${GLAD_DIR}/include ${GLM_DIR}/include ${JSON_DIR}/include
+)
 
 file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
 add_executable(${PROJECT_NAME} ${SRC_FILES} ${GLAD_DIR}/src/glad.c)

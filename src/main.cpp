@@ -201,7 +201,16 @@ int main() {
             h += 1.0f;
             if(h > 360.0f) h = 360.0f;  
         }
+        if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+            v -= 0.03f;
+            if(v < 0.0f) v = 0.0f;  
+        }        
+        if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+            v += 0.03f;
+            if(v > 1.0f) v = 1.0f;  
+        }
         if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
 
 
         fps_update_countdown -= delta_time;
@@ -217,7 +226,6 @@ int main() {
 
         float lr = 0, lg = 0, lb =0;
         HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
-        std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
 
         lightShader.Activate();
         glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));

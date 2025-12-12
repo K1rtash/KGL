@@ -82,6 +82,7 @@ int Shader::GetUniformLoc(const std::string& name) {
     auto i = uniformLocations.find(name);
     if(i == uniformLocations.end()) {
         std::cout << "[WARNING] unmapped uniform location: " << name << " (in shader id: " << id << ")" << std::endl;
+        uniformLocations[name] = -1;
         return -1;
     }
     return i->second;
@@ -120,7 +121,7 @@ Shader::Shader(const char* vertex_shader_path, const char* fragment_shader_path)
     }
 
     for (auto& [name, loc] : uniformLocations) {
-    std::cout << "Uniform: " << name << " -> " << loc << std::endl;
+    std::cout << "[INFO] mapped uniform '" << name << "' at loc " << loc << " (in shader id: " << id << ")" << std::endl;
 }
 
 }
