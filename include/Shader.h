@@ -5,6 +5,13 @@
 #include <string>
 #include <unordered_map>
 
+/**
+ * @brief Parses a file into a string
+ * @param filepath Path to the file
+ * @returns String containing raw text
+ */
+std::string read_file_contents(const char* filepath); 
+
 class Shader 
 {
     const char* vertPath;

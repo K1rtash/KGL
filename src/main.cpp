@@ -5,7 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "Mesh.h"
+#include "Model.h"
 
 #include <iostream>
 #include <algorithm>
@@ -123,18 +123,18 @@ int main() {
 
     Texture textures[] 
     {
-        Texture{"../textures/planks.png", "diffuse", 0, GL_RGBA , GL_UNSIGNED_BYTE},
-        Texture{"../textures/planksSpec.png", "specular", 1, GL_RED, GL_UNSIGNED_BYTE}
+        Texture{"../textures/planks.png", "diffuse", 0},
+        Texture{"../textures/planksSpec.png", "specular", 1}
     };
 
     Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
+    Shader lightShader{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
 
 	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
 	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
 	Mesh floor(&verts, &ind, &tex);
     
-    Shader lightShader{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
 	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
     Mesh light(&lightVerts, &lightInd, &tex);
@@ -150,7 +150,7 @@ int main() {
     objectModel = glm::translate(objectModel, objectPos);
         
 
-    
+    Model model{"../models/sword/scene.gltf"};
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -179,7 +179,7 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
             shaderProgram.Reload();
-            lightShader.Reload();
+            //lightShader.Reload();
         }
         if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
             lightPos = camera.Position;
@@ -227,26 +227,25 @@ int main() {
         float lr = 0, lg = 0, lb =0;
         HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
 
-        lightShader.Activate();
-        glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-        glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-        shaderProgram.Activate();
-        glUniformMatrix4fv(shaderProgram.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(objectModel));
-        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
         glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
-
-
+        
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         
-        floor.Draw(&shaderProgram, &camera);
-        light.Draw(&lightShader, &camera);
-            
+        //model.Draw(shaderProgram, camera);
+
+        floor.Draw(&shaderProgram, &camera, objectModel, glm::vec3{1.0, 1.0, 0.5}, glm::quat{glm::angleAxis(glm::radians(30.0f), glm::vec3(1,0,0))}, glm::vec3{1.0, 1.0, 2.0});
+            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+            glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        light.Draw(&lightShader, &camera, lightModel, glm::vec3{1.0, 1.0, 1.0,}, glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,1,0))}, glm::vec3{1.0, 1.0, 1.0});
+            glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
+            glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);    
+
         glfwSwapBuffers(window);
     }
         
     shaderProgram.Delete();
-    lightShader.Delete();
+    //lightShader.Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();

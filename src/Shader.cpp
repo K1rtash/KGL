@@ -7,18 +7,17 @@
 
 using std::string, std::ifstream, std::stringstream, std::cerr, std::endl;
 
-string loadShaderSource(const char* filepath) 
+std::string read_file_contents(const char* filepath) 
 {
     ifstream file(filepath);
 
-    if (!file.is_open()) throw std::runtime_error("Unable to open source file");
-    if (file.fail() || file.bad()) throw std::runtime_error("Cant reading source file");
-
+    if (!file.is_open()) throw std::runtime_error("unable to open source file");
+    if (file.fail() || file.bad()) throw std::runtime_error("cant read source file");
 
     stringstream buffer;
     buffer << file.rdbuf();
 
-    if (buffer.str().empty()) throw std::runtime_error("Source file is empty");
+    if (buffer.str().empty()) throw std::runtime_error("source file is empty");
 
     return buffer.str();
 }
@@ -54,8 +53,8 @@ void Shader::create()
     int uniformCount = 0;
 
     linkShaders(
-        compileShaderSource(loadShaderSource(vertPath).c_str(), GL_VERTEX_SHADER),
-        compileShaderSource(loadShaderSource(fragPath).c_str(), GL_FRAGMENT_SHADER)
+        compileShaderSource(read_file_contents(vertPath).c_str(), GL_VERTEX_SHADER),
+        compileShaderSource(read_file_contents(fragPath).c_str(), GL_FRAGMENT_SHADER)
     );
 
     glGetProgramiv(id, GL_ACTIVE_UNIFORMS, &uniformCount);

@@ -21,11 +21,9 @@ public:
      * @param path Path to the asset
      * @param texType to-do
      * @param slot OpenGL's slot to save a texture (usually 0)
-     * @param format GL's texture color channel format, as in GL_RGB or GL_RGBA
-     * @param pixelType Data type of the texture pixels, as in GL_UNSIGNED_BYTE
      * @note Supported image formats: .PNG .JPG && all supported by stb_image
      */
-    Texture(const char* path, const char* texType, GLuint slot, GLenum format, GLenum pixelType);
+    Texture(const char* path, const char* texType, GLuint slot);
     /**
      * @brief Calls Delete()
      */
