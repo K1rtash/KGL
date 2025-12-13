@@ -127,9 +127,8 @@ int main() {
         Texture{"../textures/planksSpec.png", "specular", 1}
     };
 
-    Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
     Shader lightShader{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
-
+    
 	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
 	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
 	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
@@ -137,9 +136,8 @@ int main() {
     
 	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
-    Mesh light(&lightVerts, &lightInd, &tex);
+    Mesh light(&lightVerts, &lightInd, &tex);    
     
-
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
     glm::mat4 lightModel = glm::mat4(1.0f);
@@ -148,12 +146,14 @@ int main() {
     glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::mat4 objectModel = glm::mat4(1.0f);
     objectModel = glm::translate(objectModel, objectPos);
-        
-
-    Model model{"../models/sword/scene.gltf"};
+    
+    
+    Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
+    Model model{"../models/bunny/scene.gltf"};
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
     //glEnable(GL_CULL_FACE);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
@@ -179,7 +179,7 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
             shaderProgram.Reload();
-            //lightShader.Reload();
+            lightShader.Reload();
         }
         if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
             lightPos = camera.Position;
@@ -232,20 +232,22 @@ int main() {
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         
-        //model.Draw(shaderProgram, camera);
+        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,1,0))}, glm::vec3{10.0, 10.0, 10.0});
+        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+        glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-        floor.Draw(&shaderProgram, &camera, objectModel, glm::vec3{1.0, 1.0, 0.5}, glm::quat{glm::angleAxis(glm::radians(30.0f), glm::vec3(1,0,0))}, glm::vec3{1.0, 1.0, 2.0});
+        floor.Draw(&shaderProgram, &camera, objectModel, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
             glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
             glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
         light.Draw(&lightShader, &camera, lightModel, glm::vec3{1.0, 1.0, 1.0,}, glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,1,0))}, glm::vec3{1.0, 1.0, 1.0});
             glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-            glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);    
+            glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
 
         glfwSwapBuffers(window);
     }
         
     shaderProgram.Delete();
-    //lightShader.Delete();
+    lightShader.Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();

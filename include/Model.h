@@ -9,11 +9,20 @@ using json = nlohmann::json;
 class Model
 {
 public:
-   Model(const char* file);
-   void Draw(Shader& shader, Camera& camera);
-   
+	// Loads in a model from a file and stores tha information in 'data', 'JSON', and 'file'
+	Model(const char* file);
+
+	void Draw
+	(
+		Shader* shader, 
+		Camera* camera,
+		glm::vec3 translation = glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::quat rotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f),
+		glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f)
+	);
+
 private:
- 	// Variables for easy access
+	// Variables for easy access
 	const char* file;
 	std::vector<unsigned char> data;
 	json JSON;
@@ -55,5 +64,4 @@ private:
 	std::vector<glm::vec3> groupFloatsVec3(std::vector<float> floatVec);
 	std::vector<glm::vec4> groupFloatsVec4(std::vector<float> floatVec);
 };
-
 #endif
