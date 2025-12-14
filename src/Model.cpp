@@ -14,7 +14,7 @@ std::string get_file_contents(const char* filename)
 		in.close();
 		return(contents);
 	}
-	throw std::runtime_error("unable to open file: " + string(filename));
+	throw std::runtime_error("unable to open file '" + string(filename) + "': ");
 }
 
 Model::Model(const char* file)
