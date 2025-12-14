@@ -18,7 +18,7 @@
  */
 class Camera 
 {
-    float speed = 2.0f, sensitivity = 100.0f;
+    float speed = 2.0f, sensitivity = 100.0f, sprintSpeed = 2.0f, baseSpeed = 2.0f;
     const float aspect, width, height; //Logical window resolution
     bool firstClick = true; //Prevents the camera from jumping around when first clicking
     Shader* shader = nullptr;
@@ -59,5 +59,13 @@ public:
      * @param deltaTime Set the input rate independent from the framerate
      */
 	void Inputs(GLFWwindow* window, double deltaTime); 
+    /**
+     * @todo
+     */
+    void SetAttr(float baseS, float sprintS, float sens) {
+        baseSpeed = baseS;
+        sprintSpeed = sprintS;
+        sensitivity = sens;
+    }
 };
 #endif

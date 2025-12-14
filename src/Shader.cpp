@@ -11,13 +11,13 @@ std::string read_file_contents(const char* filepath)
 {
     ifstream file(filepath);
 
-    if (!file.is_open()) throw std::runtime_error("unable to open source file");
-    if (file.fail() || file.bad()) throw std::runtime_error("cant read source file");
+    if (!file.is_open()) throw std::runtime_error("unable to open source file '" + string(filepath) + "'");
+    if (file.fail() || file.bad()) throw std::runtime_error("cant read source file '" + string(filepath) + "'");
 
     stringstream buffer;
     buffer << file.rdbuf();
 
-    if (buffer.str().empty()) throw std::runtime_error("source file is empty");
+    if (buffer.str().empty()) throw std::runtime_error("source file is empty '" + string(filepath) + "'");
 
     return buffer.str();
 }
@@ -73,14 +73,10 @@ void Shader::create()
     }
 }
 
-void Shader::AddUniform(const char* name) {
-    uniformLocations[name] = glGetUniformLocation(id, name);
-}
-
 int Shader::GetUniformLoc(const std::string& name) {
     auto i = uniformLocations.find(name);
     if(i == uniformLocations.end()) {
-        std::cout << "[WARNING] unmapped uniform location: " << name << " (in shader id: " << id << ")" << std::endl;
+        std::cout << "[WARNING] tried to access unmapped uniform location: " << name << " (in shader id: " << id << ")" << std::endl;
         uniformLocations[name] = -1;
         return -1;
     }
@@ -114,6 +110,7 @@ Shader::Shader(const char* vertex_shader_path, const char* fragment_shader_path)
     fragPath{fragment_shader_path} 
 {
     try {
+        std::cout << "[INFO] creating shader program with id: " << id << " vertex shader: '" << vertex_shader_path << "' fragment shader: '" << fragment_shader_path << "'" << std::endl;
         create();
     } catch (std::runtime_error& e) {
         std::cout << "[ERROR] while creating shader program: " << e.what() << std::endl;

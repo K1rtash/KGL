@@ -78,7 +78,7 @@ int main() {
 
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
 
-    Vertex vertices[] =
+    /*Vertex vertices[] =
     { //               COORDINATES           /            COLORS          /           NORMALS         /       TEXTURE COORDINATES    //
         Vertex{glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
         Vertex{glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
@@ -131,34 +131,40 @@ int main() {
     
 	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
 	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
-	std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
-	Mesh floor(&verts, &ind, &tex);
+	//std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
+	//Mesh floor(&verts, &ind, &tex);
     
 	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
     Mesh light(&lightVerts, &lightInd, &tex);    
     
+    glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::mat4 objectModel = glm::mat4(1.0f);
+    objectModel = glm::translate(objectModel, objectPos);*/
+
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
     glm::mat4 lightModel = glm::mat4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
-    
-    glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::mat4 objectModel = glm::mat4(1.0f);
-    objectModel = glm::translate(objectModel, objectPos);
-    
+
     
     Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
-    Model model{"../models/bunny/scene.gltf"};
+    Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
+    Model model_ground{"../models/ground/scene.gltf"};
+    Model model_tree{"../models/trees/scene.gltf"};
+    Model model{"../models/crow/scene.gltf"};    
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
+    //glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     //glEnable(GL_CULL_FACE);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
     
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
+    camera.SetAttr(10.0, 2.0, 100.0);
     
     double prev_s = glfwGetTime();
     double fps_update_countdown = 0.0;
@@ -179,7 +185,7 @@ int main() {
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
         if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
             shaderProgram.Reload();
-            lightShader.Reload();
+            outlineShader.Reload();
         }
         if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
             lightPos = camera.Position;
@@ -222,32 +228,42 @@ int main() {
         }
         
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         float lr = 0, lg = 0, lb =0;
         HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
 
+        shaderProgram.Activate();
         glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
         
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         
-        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,1,0))}, glm::vec3{10.0, 10.0, 10.0});
-        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-        glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 2.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        
+        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        glStencilMask(0x00);
+        glDisable(GL_DEPTH_TEST);
+        
+        outlineShader.Activate();
+        glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
+        
+        model.Draw(&outlineShader, &camera, glm::vec3{1.0, 2.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
 
-        floor.Draw(&shaderProgram, &camera, objectModel, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
-            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-            glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
-        light.Draw(&lightShader, &camera, lightModel, glm::vec3{1.0, 1.0, 1.0,}, glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,1,0))}, glm::vec3{1.0, 1.0, 1.0});
-            glUniformMatrix4fv(lightShader.GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(lightModel));
-            glUniform4f(lightShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+        
+        //model_ground.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        //model_tree.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
 
         glfwSwapBuffers(window);
     }
         
     shaderProgram.Delete();
-    lightShader.Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();

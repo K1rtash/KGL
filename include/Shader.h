@@ -36,11 +36,6 @@ public:
      */
     int GetUniformLoc(const std::string& name);
     /**
-     * @brief Locates and saves the memory address of a non-static uniform
-     * @param name Uniform id
-     */
-    void AddUniform(const char* name);
-    /**
      * @brief Compiles all shaders from source and sets all uniform locations
      * @warning Compile-time GLSL errors will throw std::runtime_error
      */

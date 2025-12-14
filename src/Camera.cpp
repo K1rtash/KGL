@@ -25,8 +25,8 @@ void Camera::Matrix(Shader* shader, const char* uniform) {
 
 void Camera::Inputs(GLFWwindow* window, double deltaTime) 
 {
-    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) speed = 4.0f;
-    else if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) speed = 2.0f; 
+    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) speed = baseSpeed * sprintSpeed;
+    else if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) speed = baseSpeed; 
 
     float velocity = speed * (float)deltaTime; 
 

@@ -4,9 +4,9 @@
 
 std::string get_file_contents(const char* filename)
 {
-	std::ifstream in(filename, std::ios::binary);
+    std::ifstream in(filename, std::ios::binary);
 	if (in) {
-		std::string contents;
+        std::string contents;
 		in.seekg(0, std::ios::end);
 		contents.resize(in.tellg());
 		in.seekg(0, std::ios::beg);
@@ -32,18 +32,18 @@ Model::Model(const char* file)
 }
 
 void Model::Draw(
-		Shader* shader, 
-		Camera* camera,
-		glm::vec3 translation,
-		glm::quat rotation,
-		glm::vec3 scale
-	)
+        Shader* shader, 
+        Camera* camera,
+        glm::vec3 translation,
+        glm::quat rotation,
+        glm::vec3 scale
+    )
 {
-	// Go over all meshes and draw each one
-	for (unsigned int i = 0; i < meshes.size(); i++)
-	{
-		meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translation, rotation, scale);
-	}
+    // Go over all meshes and draw each one
+    for (unsigned int i = 0; i < meshes.size(); i++)
+    {
+        meshes[i].Mesh::Draw(shader, camera, matricesMeshes[i], translation, rotation, scale);
+    }
 }
 
 void Model::loadMesh(unsigned int indMesh)
@@ -253,53 +253,42 @@ std::vector<GLuint> Model::getIndices(json accessor)
 
 std::vector<Texture> Model::getTextures()
 {
-	std::vector<Texture> textures;
+    std::vector<Texture> textures;
 
-	std::string fileStr = std::string(file);
-	std::string fileDirectory = fileStr.substr(0, fileStr.find_last_of('/') + 1);
+    std::string fileStr = std::string(file);
+    std::string fileDirectory = fileStr.substr(0, fileStr.find_last_of('/') + 1);
 
-	// Go over all images
-	for (unsigned int i = 0; i < JSON["images"].size(); i++)
-	{
-		// uri of current texture
-		std::string texPath = JSON["images"][i]["uri"];
+    // Recorremos todas las imágenes definidas en el glTF
+    for (unsigned int i = 0; i < JSON["images"].size(); i++)
+    {
+        std::string texPath = JSON["images"][i]["uri"];
 
-		// Check if the texture has already been loaded
-		bool skip = false;
-		for (unsigned int j = 0; j < loadedTexName.size(); j++)
-		{
-			if (loadedTexName[j] == texPath)
-			{
-				textures.push_back(loadedTex[j]);
-				skip = true;
-				break;
-			}
-		}
+        // Evitar duplicados
+        bool skip = false;
+        for (unsigned int j = 0; j < loadedTexName.size(); j++)
+        {
+            if (loadedTexName[j] == texPath)
+            {
+                textures.push_back(loadedTex[j]);
+                skip = true;
+                break;
+            }
+        }
 
-		// If the texture has been loaded, skip this
-		if (!skip)
-		{
-			// Load diffuse texture
-			if (texPath.find("baseColor") != std::string::npos)
-			{
-				Texture diffuse = Texture((fileDirectory + texPath).c_str(), "diffuse", loadedTex.size());
-				textures.push_back(diffuse);
-				loadedTex.push_back(diffuse);
-				loadedTexName.push_back(texPath);
-			}
-			// Load specular texture
-			else if (texPath.find("metallicRoughness") != std::string::npos)
-			{
-				Texture specular = Texture((fileDirectory + texPath).c_str(), "specular", loadedTex.size());
-				textures.push_back(specular);
-				loadedTex.push_back(specular);
-				loadedTexName.push_back(texPath);
-			}
-		}
-	}
+        if (!skip)
+        {
+            // Aquí cargamos siempre la textura, sin depender del nombre
+            Texture tex((fileDirectory + texPath).c_str(), "diffuse", loadedTex.size());
+            textures.push_back(tex);
+            loadedTex.push_back(tex);
+            loadedTexName.push_back(texPath);
+        }
+    }
 
-	return textures;
+    return textures;
 }
+
+
 
 std::vector<Vertex> Model::assembleVertices
 (
