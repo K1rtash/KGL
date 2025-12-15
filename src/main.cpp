@@ -152,14 +152,16 @@ int main() {
     Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
     Model model_ground{"../models/ground/scene.gltf"};
     Model model_tree{"../models/trees/scene.gltf"};
-    Model model{"../models/crow/scene.gltf"};    
+    Model model{"../models/statue/scene.gltf"};    
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     glEnable(GL_STENCIL_TEST);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    //glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_FRONT);
+    glFrontFace(GL_CCW);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
     
@@ -242,8 +244,8 @@ int main() {
         camera.Inputs(window, delta_time);
         camera.updateMatrix(45.0f, 0.1f, 100.0f);
         
-        model_ground.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
-        model_tree.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        //model_ground.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        //model_tree.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
 
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilMask(0xFF);
