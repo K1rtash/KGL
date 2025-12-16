@@ -40,7 +40,7 @@ void Mesh::Draw(Shader* shader, Camera* camera, glm::mat4 matrix, glm::vec3 tran
 		textures[i].Bind();
 	}
 
-	glUniform3f(shader->GetUniformLoc("camPos"), camera->interpolated.pos.x, camera->interpolated.pos.y, camera->interpolated.pos.z);
+	glUniform3f(shader->GetUniformLoc("camPos"), camera->intp.pos.x, camera->intp.pos.y, camera->intp.pos.z);
 	glUniformMatrix4fv(shader->GetUniformLoc("camMatrix"), 1, GL_FALSE, glm::value_ptr(camera->cameraMatrix));
 
 	// Initialize matrices

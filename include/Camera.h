@@ -24,17 +24,20 @@ struct Transform
  */
 class Camera 
 {
-    float speed, sensitivity = 0.3f, sprintSpeed = 2.0f, baseSpeed = 10.0f;
-    const float aspect, width, height; //Logical window resolution
-    bool firstClick = true; //Prevents the camera from jumping around when first clicking
-    Shader* shader = nullptr;
+    const float aspect, width, height;
+    bool firstClick = true;
 public:
     Transform prev;
-    Transform crnt;
-    Transform interpolated;
+    Transform curr;
+    Transform intp;
+
     glm::mat4 projection = glm::mat4(1.0f);
-    glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::mat4 cameraMatrix = glm::mat4(1.0f);
+
+    float mouseDX = 0.0f, mouseDY = 0.0f;
+
+    float speed = 5.0f;
+    float sensitivity = 0.0025f;
 
     /**
      * @brief Creates the object
@@ -60,27 +63,14 @@ public:
     void setViewport(float FOVdeg, float nearPlane, float farPlane);
 
     /**
-     * @brief Sends camera data to the current shader program
-     *
-     * Data sent is the product of the projection and view matrices
-     * @param shader Target shader program
-     * @param uniform Uniform name
-     */
-    void Matrix(Shader* shader, const char* uniform);
-
-    /**
-     * @brief Handles user-input
+     * @brief Handles event-like user-input like keys
      * @param window Window to get input from
-     * @note Must be called on the server thread
+     * @note Must be called on the logic thread
      */
-	void Inputs(GLFWwindow* window, double deltaTime); 
+	void fixedInput(GLFWwindow* window, double deltaTime); 
     /**
      * @todo
      */
-    void SetAttr(float baseS, float sprintS, float sens) {
-        baseSpeed = baseS;
-        sprintSpeed = sprintS;
-        sensitivity = sens;
-    }
+    void captureMouse(GLFWwindow* window);
 };
 #endif

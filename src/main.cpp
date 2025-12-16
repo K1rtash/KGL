@@ -21,8 +21,6 @@ void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
-void update(const double TPS);
-void render();
 
 int main() {
     KGL_WindowConfig windowConfig;
@@ -80,69 +78,6 @@ int main() {
 
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
 
-    /*Vertex vertices[] =
-    { //               COORDINATES           /            COLORS          /           NORMALS         /       TEXTURE COORDINATES    //
-        Vertex{glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
-        Vertex{glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
-        Vertex{glm::vec3( 1.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
-        Vertex{glm::vec3( 1.0f, 0.0f,  1.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 0.0f)}
-    };
-
-    // Indices for vertices order
-    GLuint indices[] =
-    {
-        0, 1, 2,
-        0, 2, 3
-    };
-
-    Vertex lightVertices[] =
-    { //     COORDINATES     //
-        Vertex{glm::vec3(-0.1f, -0.1f,  0.1f)},
-        Vertex{glm::vec3(-0.1f, -0.1f, -0.1f)},
-        Vertex{glm::vec3(0.1f, -0.1f, -0.1f)},
-        Vertex{glm::vec3(0.1f, -0.1f,  0.1f)},
-        Vertex{glm::vec3(-0.1f,  0.1f,  0.1f)},
-        Vertex{glm::vec3(-0.1f,  0.1f, -0.1f)},
-        Vertex{glm::vec3(0.1f,  0.1f, -0.1f)},
-        Vertex{glm::vec3(0.1f,  0.1f,  0.1f)}
-    };
-
-    GLuint lightIndices[] =
-    {
-        0, 1, 2,
-        0, 2, 3,
-        0, 4, 7,
-        0, 7, 3,
-        3, 7, 6,
-        3, 6, 2,
-        2, 6, 5,
-        2, 5, 1,
-        1, 5, 4,
-        1, 4, 0,
-        4, 5, 6,
-        4, 6, 7
-    };
-
-    Texture textures[] 
-    {
-        Texture{"../textures/planks.png", "diffuse", 0},
-        Texture{"../textures/planksSpec.png", "specular", 1}
-    };
-
-    Shader lightShader{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
-    
-	std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
-	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
-	//std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
-	//Mesh floor(&verts, &ind, &tex);
-    
-	std::vector <Vertex> lightVerts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
-	std::vector <GLuint> lightInd(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
-    Mesh light(&lightVerts, &lightInd, &tex);    
-    
-    glm::vec3 objectPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::mat4 objectModel = glm::mat4(1.0f);
-    objectModel = glm::translate(objectModel, objectPos);*/
 
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
     glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
@@ -151,9 +86,12 @@ int main() {
 
     
     Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
-    Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
+    //Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
+    Shader grassShader{"../shaders/vert.glsl", "../shaders/grass/frag.glsl"};
+    Shader windowShader("../shaders/vert.glsl", "../shaders/blend/frag.glsl");
     Model model_ground{"../models/ground/scene.gltf"};
-    Model model_tree{"../models/trees/scene.gltf"};
+    Model model_grass{"../models/grass/scene.gltf"};
+    Model model_window{"../models/windows/scene.gltf"};    
     Model model{"../models/bunny/scene.gltf"};    
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -163,12 +101,12 @@ int main() {
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
     
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
-    //camera.SetAttr(10.0, 2.0, 0.02f);
     glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
     
     const double FIXED_TIMESTEP = 1.0 / 60.0;
@@ -181,7 +119,11 @@ int main() {
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
-        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED)) glfwWaitEvents();
+        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            accumulator = 0.0;
+            continue;
+        }
                 
         currentTime = glfwGetTime();
         deltaTime = std::min((currentTime - prevTime), 0.25);
@@ -189,15 +131,18 @@ int main() {
         accumulator += deltaTime;
         unsigned int steps = 0;
 
+        camera.prev = camera.curr;
+        camera.captureMouse(window);
+
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
             if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
                 shaderProgram.Reload();
-                outlineShader.Reload();
+                grassShader.Reload();
             }
             if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-                lightPos = camera.interpolated.pos;
-                lightModel = glm::translate(glm::mat4(1.0f), camera.interpolated.pos);
+                lightPos = camera.intp.pos;
+                lightModel = glm::translate(glm::mat4(1.0f), camera.intp.pos);
             }
             if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
                 s += 0.03f;
@@ -237,11 +182,13 @@ int main() {
             shaderProgram.Activate();
             glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
             glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-            outlineShader.Activate();
-            glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
+            //outlineShader.Activate();
+            //glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
+            grassShader.Activate();
+            glUniform4f(grassShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+            glUniform3f(grassShader.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
-            camera.prev = camera.crnt;
-            camera.Inputs(window, FIXED_TIMESTEP);
+            camera.fixedInput(window, FIXED_TIMESTEP);
 
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
@@ -252,43 +199,31 @@ int main() {
             steps++;
         }        
 
-        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);
-        std::cout << alpha << std::endl;
-        
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        camera.update(alpha);
-        
-        //model_ground.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
-        //model_tree.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);        
 
-        //glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        //glStencilMask(0xFF);
+        camera.update(alpha);
+
         model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0});
-        
-        //glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        //glStencilMask(0x00);
-        //glDisable(GL_DEPTH_TEST);
-        
-        //model.Draw(&outlineShader, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))}, glm::vec3{1.0, 1.0, 1.0});
-        
-        //glStencilMask(0xFF);
-        //glStencilFunc(GL_ALWAYS, 0, 0xFF);
-        //glEnable(GL_DEPTH_TEST);
-        
+        model_ground.Draw(&shaderProgram, &camera);
+        glDisable(GL_CULL_FACE);
+        model_grass.Draw(&grassShader, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(10.0f), glm::vec3(0.0, 0.0, 0.0))}, glm::vec3{1.0, 1.0, 1.0});
+        glEnable(GL_BLEND);
+        model_window.Draw(&windowShader, &camera);
+        glDisable(GL_BLEND);
+        glEnable(GL_CULL_FACE);
+
         glfwSwapBuffers(window);
     }
         
     shaderProgram.Delete();
+    grassShader.Delete();
 
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
-}
-
-void update(const double TPS) {
-
 }
     
 void error_callback(int error, const char* description)
