@@ -5,8 +5,8 @@ set(CMAKE_CXX_STANDARD 23)
 
 set(GLAD_DIR "C:/DEV/SDK/Headers/glad")
 set(GLFW_DIR "C:/DEV/SDK/Static/GLFW")
-set(GLM_DIR "C:/DEV/SDK/Static/glm")
-set(JSON_DIR "C:/DEV/SDK/Headers/nlohmann")
+set(GLM_DIR "C:/DEV/SDK/Headers/glm")
+set(JSON_DIR "C:/DEV/SDK/Headers/nlohmann_json")
 
 # Esto es lo único que necesitas para que funcione find_package
 list(APPEND CMAKE_PREFIX_PATH ${GLFW_DIR})

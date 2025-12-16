@@ -2,21 +2,27 @@
 #include <iostream>
 
 Camera::Camera(float width, float height, glm::vec3 position) : 
-    width{width}, height{height}, aspect{std::max(0.1f, width / height)}, Position{position}
+    width{width}, height{height}, aspect{std::max(0.1f, width / height)}, crnt{position, glm::quat(1, 0, 0, 0)}
 {
+    setViewport(45.0f, 0.1f, 100.0f);
 }
 
-void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane)
+void Camera::setViewport(float FOVdeg, float nearPlane, float farPlane)
 {
-    // Initializes matrices since otherwise they will be the null matrix
-    glm::mat4 view = glm::mat4(1.0f);
-    glm::mat4 projection = glm::mat4(1.0f);
-
-    // Makes camera look in the right direction from the right position
-    view = glm::lookAt(Position, Position + Orientation, Up);
     projection = glm::perspective(glm::radians(FOVdeg), aspect, nearPlane, farPlane);
+}
+
+void Camera::update(double alpha)
+{
+    glm::mat4 view = glm::mat4(1.0f); // Initializes matrices since otherwise they will be the null matrix
+
+    interpolated.pos = prev.pos + (float)alpha * (crnt.pos - prev.pos);
+    interpolated.rot = glm::slerp(prev.rot, crnt.rot, (float)alpha);
+
+    glm::mat4 rotation = glm::mat4_cast(glm::conjugate(interpolated.rot));
+    glm::mat4 transformation = glm::translate(glm::mat4(1.0f), -interpolated.pos);
     
-    cameraMatrix = projection * view;
+    cameraMatrix = projection * (rotation * transformation);
 }
 
 void Camera::Matrix(Shader* shader, const char* uniform) {
@@ -25,44 +31,69 @@ void Camera::Matrix(Shader* shader, const char* uniform) {
 
 void Camera::Inputs(GLFWwindow* window, double deltaTime) 
 {
+    // Vectores locales
+    glm::vec3 Up = glm::vec3(0, 1, 0);
+    glm::vec3 Forward = crnt.rot * glm::vec3(0, 0, -1);
+    glm::vec3 Right   = crnt.rot * glm::vec3(1, 0, 0);
+
+    // Movimiento
     if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) speed = baseSpeed * sprintSpeed;
-    else if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) speed = baseSpeed; 
+    else speed = baseSpeed;
 
-    float velocity = speed * (float)deltaTime; 
+    float velocity = speed * (float)deltaTime;
 
-    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) Position += velocity * Orientation;
-    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) Position += velocity * -glm::normalize(glm::cross(Orientation, Up));
-    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) Position += velocity * -Orientation;
-    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) Position += velocity * glm::normalize(glm::cross(Orientation, Up));
-    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) Position += velocity * Up;
-    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) Position += velocity * -Up;
-    
-    
-    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) 
+    if(glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) crnt.pos += Forward * velocity;
+    if(glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) crnt.pos -= Forward * velocity;
+    if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) crnt.pos += Right * velocity;
+    if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) crnt.pos -= Right * velocity;
+    if(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) crnt.pos += Up * velocity;
+    if(glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) crnt.pos -= Up * velocity;
+
+    // Rotación con ratón
+    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
     {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-        if(firstClick) {
-            glfwSetCursorPos(window, (width / 2), (height / 2));
+        if(firstClick)
+        {
+            glfwSetCursorPos(window, width * 0.5, height * 0.5);
             firstClick = false;
+            return;
         }
 
+        // Obtén delta del ratón
         double mouseX, mouseY;
         glfwGetCursorPos(window, &mouseX, &mouseY);
 
-        // Normalizes and shifts the coordinates of the cursor such that they begin in the middle of the screen
-		// and then "transforms" them into degrees 
-        float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
-        float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
+        float dx = (float)(mouseX - width * 0.5);
+        float dy = (float)(mouseY - height * 0.5);
 
-        glm::vec3 newOrientation = glm::rotate(Orientation, glm::radians(-rotX), glm::normalize(glm::cross(Orientation, Up)));
+        // Delta de rotación suavizado con deltaTime
+        float rotX = -dy * sensitivity * deltaTime;
+        float rotY = -dx * sensitivity * deltaTime;
 
-        if (abs(glm::angle(newOrientation, Up) - glm::radians(90.0f)) <= glm::radians(85.0f)) Orientation = newOrientation;
+        glm::quat pitchDelta = glm::angleAxis(rotX, glm::vec3(1,0,0));
+        glm::quat yawDelta   = glm::angleAxis(rotY, glm::vec3(0,1,0));
 
-        Orientation = glm::rotate(Orientation, glm::radians(-rotY), Up);
-        glfwSetCursorPos(window, (width / 2), (height / 2));
+        // Aplica delta directamente
+        crnt.rot = glm::normalize(yawDelta * crnt.rot * pitchDelta);
+
+        // Limita pitch para evitar voltear la cámara
+        glm::vec3 forward = crnt.rot * glm::vec3(0,0,-1);
+        float pitch = glm::degrees(asin(forward.y));
+        pitch = glm::clamp(pitch, -89.0f, 89.0f);
+
+        // Reconstruye solo pitch
+        glm::vec3 yawForward = glm::normalize(glm::vec3(forward.x, 0, forward.z));
+        glm::quat yawQuat = glm::rotation(glm::vec3(0,0,-1), yawForward);
+        glm::quat pitchQuat = glm::angleAxis(glm::radians(pitch), glm::vec3(1,0,0));
+        crnt.rot = yawQuat * pitchQuat;
+
+        // Re-centra el cursor
+        glfwSetCursorPos(window, width * 0.5, height * 0.5);
     }
-    if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+    else
+    {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         firstClick = true;
     }

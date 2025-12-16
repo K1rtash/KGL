@@ -11,6 +11,12 @@
 
 #include "Shader.h"
 
+struct Transform
+{
+    glm::vec3 pos;
+    glm::quat rot;
+};
+
 /**
  * @class Camera
  * @brief Basic 3D camera with perspective view
@@ -18,13 +24,15 @@
  */
 class Camera 
 {
-    float speed = 2.0f, sensitivity = 100.0f, sprintSpeed = 2.0f, baseSpeed = 2.0f;
+    float speed, sensitivity = 0.3f, sprintSpeed = 2.0f, baseSpeed = 10.0f;
     const float aspect, width, height; //Logical window resolution
     bool firstClick = true; //Prevents the camera from jumping around when first clicking
     Shader* shader = nullptr;
 public:
-    glm::vec3 Position;
-    glm::vec3 Orientation = glm::vec3(0.0f, 0.0f, -1.0f);
+    Transform prev;
+    Transform crnt;
+    Transform interpolated;
+    glm::mat4 projection = glm::mat4(1.0f);
     glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
     glm::mat4 cameraMatrix = glm::mat4(1.0f);
 
@@ -38,11 +46,18 @@ public:
 
     /**
      * @brief Updates the vertex shader using the camera's matrices
+     * @param alpha Interpolation
+     * @note Must be called only on the render thread
+     */
+    void update(double alpha);
+    
+    /**
+     * @brief Defines the camera viewport
      * @param FOVdeg Sets the camera's FOV using radians
      * @param nearPlane Models nearer than this will be clipped out
      * @param farPlane Models farther than this will be clipped out
      */
-    void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
+    void setViewport(float FOVdeg, float nearPlane, float farPlane);
 
     /**
      * @brief Sends camera data to the current shader program
@@ -56,7 +71,7 @@ public:
     /**
      * @brief Handles user-input
      * @param window Window to get input from
-     * @param deltaTime Set the input rate independent from the framerate
+     * @note Must be called on the server thread
      */
 	void Inputs(GLFWwindow* window, double deltaTime); 
     /**

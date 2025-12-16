@@ -21,6 +21,8 @@ void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
+void update(const double TPS);
+void render();
 
 int main() {
     KGL_WindowConfig windowConfig;
@@ -152,7 +154,7 @@ int main() {
     Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
     Model model_ground{"../models/ground/scene.gltf"};
     Model model_tree{"../models/trees/scene.gltf"};
-    Model model{"../models/statue/scene.gltf"};    
+    Model model{"../models/bunny/scene.gltf"};    
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -161,107 +163,120 @@ int main() {
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
+    glFrontFace(GL_CW);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
     
     
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
-    camera.SetAttr(10.0, 2.0, 100.0);
+    //camera.SetAttr(10.0, 2.0, 0.02f);
+    glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
     
-    double prev_s = glfwGetTime();
-    double fps_update_countdown = 0.0;
-    int temp_time_passed = 0;
+    const double FIXED_TIMESTEP = 1.0 / 60.0;
+    const unsigned int MAX_STEPS = 5;
+    double prevTime = glfwGetTime();
+    double currentTime = 0.0;
+    double deltaTime = 0.0;
+    double accumulator = 0.0;
     float h = 0, s = 0.0, v = 1.0;
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
-        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED)) continue;
-        
-        
-        double current_s = glfwGetTime();
-        double delta_time = current_s - prev_s;
-        prev_s = current_s;
-        temp_time_passed++; //TEMPORAL
-        
-        //Input
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
-        if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
-            shaderProgram.Reload();
-            outlineShader.Reload();
-        }
-        if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-            lightPos = camera.Position;
-            lightModel = glm::translate(glm::mat4(1.0f), camera.Position);
-        }
-        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            s += 0.03f;
-            if(s > 1.0f) s = 1.0f;  
-        }        
-        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            s -= 0.03f;
-            if(s < 0.0f) s = 0.0f;  
-        }
-        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            h -= 1.0f;
-            if(h < 0.0f) h = 0.0f;  
-        }        
-        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            h += 1.0f;
-            if(h > 360.0f) h = 360.0f;  
-        }
-        if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
-            v -= 0.03f;
-            if(v < 0.0f) v = 0.0f;  
-        }        
-        if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-            v += 0.03f;
-            if(v > 1.0f) v = 1.0f;  
-        }
-        if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
-        if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
+        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED)) glfwWaitEvents();
+                
+        currentTime = glfwGetTime();
+        deltaTime = std::min((currentTime - prevTime), 0.25);
+        prevTime = currentTime;
+        accumulator += deltaTime;
+        unsigned int steps = 0;
 
+        while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
+            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
+            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
+                shaderProgram.Reload();
+                outlineShader.Reload();
+            }
+            if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+                lightPos = camera.interpolated.pos;
+                lightModel = glm::translate(glm::mat4(1.0f), camera.interpolated.pos);
+            }
+            if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+                s += 0.03f;
+                if(s > 1.0f) s = 1.0f;  
+            }        
+            if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+                s -= 0.03f;
+                if(s < 0.0f) s = 0.0f;  
+            }
+            if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+                h -= 1.0f;
+                if(h < 0.0f) h = 0.0f;  
+            }        
+            if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+                h += 1.0f;
+                if(h > 360.0f) h = 360.0f;  
+            }
+            if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+                v -= 0.03f;
+                if(v < 0.0f) v = 0.0f;  
+            }        
+            if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+                v += 0.03f;
+                if(v > 1.0f) v = 1.0f;  
+            }
+            if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+            if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
 
-        fps_update_countdown -= delta_time;
-        if(fps_update_countdown <= 0.0 && delta_time > 0.0) {
-            double fps = 1.0 / delta_time;
-            const char* title = (std::format("OpenGL Context | {} FPS | Time: {}", (int)fps, temp_time_passed).c_str());
-            glfwSetWindowTitle(window, title);
-            fps_update_countdown = 0.1;
-        }
+            double fps = 1.0 / deltaTime; 
+            double msPerFrame = deltaTime * 1000.0;
+            string title = std::format("OpenGL Context | {} FPS | Ms/frame: {}", fps, msPerFrame);
+            glfwSetWindowTitle(window, title.c_str());
+
+            float lr = 0, lg = 0, lb =0;
+            HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
+    
+            shaderProgram.Activate();
+            glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
+            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+            outlineShader.Activate();
+            glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
+
+            camera.prev = camera.crnt;
+            camera.Inputs(window, FIXED_TIMESTEP);
+
+            glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
+            glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
+            glm::quat nueva_rot = rot_aplicar * rot_modelo;
+            //rot_modelo = glm::normalize(nueva_rot);
+
+            accumulator -= FIXED_TIMESTEP;
+            steps++;
+        }        
+
+        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);
+        std::cout << alpha << std::endl;
         
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        float lr = 0, lg = 0, lb =0;
-        HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
-
-        shaderProgram.Activate();
-        glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
-        glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-        outlineShader.Activate();
-        glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
-        
-        camera.Inputs(window, delta_time);
-        camera.updateMatrix(45.0f, 0.1f, 100.0f);
+        camera.update(alpha);
         
         //model_ground.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
         //model_tree.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
 
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilMask(0xFF);
-        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 2.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});
+        //glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        //glStencilMask(0xFF);
+        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0});
         
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilMask(0x00);
-        glDisable(GL_DEPTH_TEST);
+        //glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+        //glStencilMask(0x00);
+        //glDisable(GL_DEPTH_TEST);
         
-        model.Draw(&outlineShader, &camera, glm::vec3{1.0, 2.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))}, glm::vec3{1.0, 1.0, 1.0});        
+        //model.Draw(&outlineShader, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))}, glm::vec3{1.0, 1.0, 1.0});
         
-        glStencilMask(0xFF);
-        glStencilFunc(GL_ALWAYS, 0, 0xFF);
-        glEnable(GL_DEPTH_TEST);
+        //glStencilMask(0xFF);
+        //glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        //glEnable(GL_DEPTH_TEST);
         
-
         glfwSwapBuffers(window);
     }
         
@@ -270,6 +285,10 @@ int main() {
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
+}
+
+void update(const double TPS) {
+
 }
     
 void error_callback(int error, const char* description)
