@@ -7,22 +7,41 @@ set(GLAD_DIR "C:/DEV/SDK/Headers/glad")
 set(GLFW_DIR "C:/DEV/SDK/Static/GLFW")
 set(GLM_DIR "C:/DEV/SDK/Headers/glm")
 set(JSON_DIR "C:/DEV/SDK/Headers/nlohmann_json")
+set(ASSIMP_DIR "C:/DEV/SDK/Static/Assimp")
 
 # Esto es lo único que necesitas para que funcione find_package
 list(APPEND CMAKE_PREFIX_PATH ${GLFW_DIR})
-list(APPEND CMAKE_PREFIX_PATH ${GLAD_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${ASSIMP_DIR})
 
 find_package(glfw3 REQUIRED CONFIG)
 find_package(OpenGL REQUIRED)
+find_package(assimp REQUIRED CONFIG)
+
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
-    ${GLAD_DIR}/include ${GLM_DIR}/include ${JSON_DIR}/include
+    ${GLAD_DIR}/include 
+    ${GLM_DIR}/include 
+    ${JSON_DIR}/include
 )
 
-file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cpp)
-add_executable(${PROJECT_NAME} ${SRC_FILES} ${GLAD_DIR}/src/glad.c)
+#link_directories(
+#    ${ASSIMP_DIR}/lib
+#)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE glfw OpenGL::GL)
+file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cxx)
+file(GLOB EXT_SRC_FILES ${PROJECT_SOURCE_DIR}/src/ext/*)
+
+add_executable(${PROJECT_NAME} 
+    ${SRC_FILES} 
+    ${EXT_SRC_FILES}
+    ${GLAD_DIR}/src/glad.c
+)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    glfw 
+    OpenGL::GL
+    assimp::assimp
+)
 
 #file(COPY ${CMAKE_SOURCE_DIR}/shaders
 #     DESTINATION ${CMAKE_SOURCE_DIR})

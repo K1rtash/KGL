@@ -83,23 +83,14 @@ int main() {
     glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
     glm::mat4 lightModel = glm::mat4(1.0f);
     lightModel = glm::translate(lightModel, lightPos);
-
-    
+        
     Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
-    //Shader outlineShader{"../shaders/outline/vert.glsl", "../shaders/outline/frag.glsl"};
-    Shader grassShader{"../shaders/vert.glsl", "../shaders/grass/frag.glsl"};
-    Shader windowShader("../shaders/vert.glsl", "../shaders/blend/frag.glsl");
-    Model model_ground{"../models/ground/scene.gltf"};
-    Model model_grass{"../models/grass/scene.gltf"};
-    Model model_window{"../models/windows/scene.gltf"};    
     Model model{"../models/bunny/scene.gltf"};    
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glEnable(GL_STENCIL_TEST);
-    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -138,7 +129,6 @@ int main() {
             if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
             if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
                 shaderProgram.Reload();
-                grassShader.Reload();
             }
             if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
                 lightPos = camera.intp.pos;
@@ -173,7 +163,7 @@ int main() {
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
-            string title = std::format("OpenGL Context | {} FPS | Ms/frame: {}", fps, msPerFrame);
+            string title = std::format("OpenGL Context | {} FPS | Ms/frame: {}", (int)fps, (float)msPerFrame);
             glfwSetWindowTitle(window, title.c_str());
 
             float lr = 0, lg = 0, lb =0;
@@ -184,43 +174,30 @@ int main() {
             glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
             //outlineShader.Activate();
             //glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
-            grassShader.Activate();
-            glUniform4f(grassShader.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
-            glUniform3f(grassShader.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
 
             camera.fixedInput(window, FIXED_TIMESTEP);
 
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
-            //rot_modelo = glm::normalize(nueva_rot);
+            rot_modelo = glm::normalize(nueva_rot);
 
             accumulator -= FIXED_TIMESTEP;
             steps++;
         }        
-
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
+                
         double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);        
-
+        
         camera.update(alpha);
-
+        
         model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0});
-        model_ground.Draw(&shaderProgram, &camera);
-        glDisable(GL_CULL_FACE);
-        model_grass.Draw(&grassShader, &camera, glm::vec3{1.0, 1.0, 1.0}, glm::quat{glm::angleAxis(glm::radians(10.0f), glm::vec3(0.0, 0.0, 0.0))}, glm::vec3{1.0, 1.0, 1.0});
-        glEnable(GL_BLEND);
-        model_window.Draw(&windowShader, &camera);
-        glDisable(GL_BLEND);
-        glEnable(GL_CULL_FACE);
-
+        
         glfwSwapBuffers(window);
     }
         
     shaderProgram.Delete();
-    grassShader.Delete();
-
     glfwDestroyWindow(window);
     glfwTerminate();
     return 0;
