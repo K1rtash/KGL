@@ -18,5 +18,5 @@ void main()
 	Normal = aNormal;
 	texCoord = aTex; 	
 
-	gl_Position = camMat * model * vec4(aPos, 1.0);
+	gl_Position = camMat * model * vec4(aPos , 1.0);
 }

@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include "iostream"
 
 Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures) : vertices{vertices}, indices{indices}, textures{textures}
 {
@@ -41,8 +42,7 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* transform)
 		textures[i].Bind();
 	}
 
-	glm::vec3 camPos = camera->getTransform()->pos;
-	glUniform3fv(shader->GetUniformLoc("camPos"), 1, glm::value_ptr(camPos));
+	glUniform3fv(shader->GetUniformLoc("camPos"), 1, glm::value_ptr(camera->getTransform()->pos));
 	glUniformMatrix4fv(shader->GetUniformLoc("camMat"), 1, GL_FALSE, glm::value_ptr(camera->cameraMatrix));
 
 	glm::mat4 model = glm::mat4(1.0f);

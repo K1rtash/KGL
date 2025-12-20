@@ -18,11 +18,11 @@ void Camera::update(double alpha)
     intp.pos = prev.pos + (float)alpha * (curr.pos - prev.pos);
     intp.rot = glm::slerp(prev.rot, curr.rot, (float)alpha);
 
-    glm::mat4 rot = glm::mat4_cast(glm::conjugate(intp.rot));
-    glm::mat4 trans = glm::translate(glm::mat4(1.0f), -intp.pos);
+    glm::mat4 view = glm::mat4_cast(glm::conjugate(intp.rot));
+    view = glm::translate(view, -intp.pos);
     glm::mat4 proj = glm::perspective(glm::radians(frustum.fov), frustum.ASPECT, frustum.nearPlane, frustum.farPlane);
 
-    cameraMatrix = proj * rot * trans;
+    cameraMatrix = proj * view;
 }
 
 void Camera::fixedInput(GLFWwindow* window, double deltaTime) 
@@ -30,32 +30,34 @@ void Camera::fixedInput(GLFWwindow* window, double deltaTime)
     prev = curr;
 
     // ===== ROTACIÓN =====
-    float yaw   = -mouseDX * sensitivity;
-    float pitch = -mouseDY * sensitivity;
-    
+    float dx = -mouseDX * sensitivity; // aquí asume que sensitivity está en grados por píxel
+    float dy = -mouseDY * sensitivity;
+
     mouseDX = mouseDY = 0.0f;
 
-    glm::quat yawQ   = glm::angleAxis(yaw,   glm::vec3(0,1,0));
-    glm::quat pitchQ = glm::angleAxis(pitch, glm::vec3(1,0,0));
+    // limita el delta por frame para evitar saltos bestias
+    float maxDelta = 5.0f;
+    dx = glm::clamp(dx, -maxDelta, maxDelta);
+    dy = glm::clamp(dy, -maxDelta, maxDelta);
 
-    curr.rot = glm::normalize(yawQ * curr.rot * pitchQ);
+    yaw   += dx;
+    pitch += dy;
 
-    // Clamp pitch
-    glm::vec3 forward = curr.rot * glm::vec3(0,0,-1);
-    float pitchAngle = glm::degrees(asinf(forward.y));
-    pitchAngle = glm::clamp(pitchAngle, -89.0f, 89.0f);
+    // clamp del pitch
+    pitch = glm::clamp(pitch, -89.0f, 89.0f);
 
-    glm::vec3 flatForward = glm::normalize(glm::vec3(forward.x, 0, forward.z));
-    glm::quat yawOnly = glm::rotation(glm::vec3(0,0,-1), flatForward);
-    glm::quat pitchOnly = glm::angleAxis(glm::radians(pitchAngle), glm::vec3(1,0,0));
-    curr.rot = yawOnly * pitchOnly;
-    
+    // construir el quaternion a partir de yaw/pitch
+    glm::quat qYaw   = glm::angleAxis(glm::radians(yaw),   glm::vec3(0,1,0));
+    glm::quat qPitch = glm::angleAxis(glm::radians(pitch), glm::vec3(1,0,0));
+
+    curr.rot = glm::normalize(qYaw * qPitch);
+
     // ===== MOVIMIENTO =====
     glm::vec3 f = curr.rot * glm::vec3(0,0,-1);
     glm::vec3 r = curr.rot * glm::vec3(1,0,0);
     glm::vec3 u = glm::vec3(0,1,0);
     
-    float vel = speed * deltaTime;
+    float vel = speed * (float)deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W)) curr.pos += f * vel;
     if (glfwGetKey(window, GLFW_KEY_S)) curr.pos -= f * vel;

@@ -39,9 +39,8 @@ public:
     glm::mat4 cameraMatrix = glm::mat4(1.0f);
 
     float mouseDX = 0.0f, mouseDY = 0.0f;
-
-    float speed = 5.0f;
-    float sensitivity = 0.0025f;
+    float yaw = 0.0f, pitch = 0.0f;
+    float speed = 5.0f, sensitivity = 0.33f;
 
     /**
      * @brief Creates the object

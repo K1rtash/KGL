@@ -127,7 +127,7 @@ int main(void) {
     glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
     Transform modelTrans;
     modelTrans.r = rot_modelo;
-    modelTrans.s = glm::vec3{100.0f, 100.0f, 100.0f};
+    modelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
     modelTrans.t = glm::vec3{1.0, 1.0, 1.0};
 
     Vertex lightVertices[] =
@@ -261,7 +261,7 @@ int main(void) {
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
             //rot_modelo = glm::normalize(nueva_rot);
-            modelTrans = {glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0}};
+            modelTrans.r = rot_modelo;
 
             accumulator -= FIXED_TIMESTEP;
             steps++;
