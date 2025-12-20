@@ -4,7 +4,6 @@ out vec4 FragColor; // Outputs colors in RGBA
 
 in vec3 crntPos;
 in vec3 Normal;
-in vec3 color;
 in vec2 texCoord;
 
 uniform sampler2D diffuse0;
@@ -18,9 +17,15 @@ vec4 pointLight()
 {
     vec3 lightVec = lightPos - crntPos;
     float dist = length(lightVec);
-    float a = 1.00; // ATENUACION cuanto mas grande mas rapido decae la intensidad
+
+    /*float a = 1.00; // ATENUACION cuanto mas grande mas rapido decae la intensidad
     float b = 0.05; // 
-    float inten = 1.0f / (a * dist * dist + b * dist + 1.0f);
+    float inten = 1.0f / (a * dist * dist + b * dist + 1.0f);*/
+    float constant  = 1.0;
+    float linear    = 0.09;
+    float quadratic = 0.032;
+
+    float inten = 1.0 / (constant + linear * dist + quadratic * dist * dist);
 
     float ambient = 0.20f;
 
@@ -102,5 +107,5 @@ void main()
 {
     float depth = logisticDepth(gl_FragCoord.z); 
 	//FragColor = direcLight() * (1.0f - depth) + vec4(depth * vec3(0.2f, 0.3f, 0.3f), 1.0f);
-    FragColor = direcLight();
+    FragColor = pointLight();
 }

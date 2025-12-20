@@ -11,7 +11,7 @@
 
 #include "Shader.h"
 
-struct Transform
+struct CameraTransform
 {
     glm::vec3 pos;
     glm::quat rot;
@@ -24,14 +24,18 @@ struct Transform
  */
 class Camera 
 {
-    const float aspect, width, height;
     bool firstClick = true;
-public:
-    Transform prev;
-    Transform curr;
-    Transform intp;
+    CameraTransform prev;
+    CameraTransform curr;
+    CameraTransform intp;
 
-    glm::mat4 projection = glm::mat4(1.0f);
+    struct Frustum
+    {
+        float fov, nearPlane, farPlane;
+        float width, height;
+        const float ASPECT;
+    } frustum;
+public:
     glm::mat4 cameraMatrix = glm::mat4(1.0f);
 
     float mouseDX = 0.0f, mouseDY = 0.0f;
@@ -72,5 +76,13 @@ public:
      * @todo
      */
     void captureMouse(GLFWwindow* window);
+    /**
+     * @todo
+     */
+    const CameraTransform* getTransform() const { return &intp; } 
+    /**
+     * 
+     */
+    void updateScroll(double scroll_delta);
 };
 #endif

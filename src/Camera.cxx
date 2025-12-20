@@ -2,14 +2,15 @@
 #include <iostream>
 
 Camera::Camera(float width, float height, glm::vec3 position) : 
-    width{width}, height{height}, aspect{std::max(0.1f, width / height)}, curr{position, glm::quat(1, 0, 0, 0)}
+    curr{position, glm::quat(1, 0, 0, 0)}, frustum{45.0f, 0.1f, 100.0f, width, height, std::max(0.1f, width / height)}
 {
-    setViewport(45.0f, 0.1f, 100.0f);
 }
 
 void Camera::setViewport(float FOVdeg, float nearPlane, float farPlane)
 {
-    projection = glm::perspective(glm::radians(FOVdeg), aspect, nearPlane, farPlane);
+    frustum.nearPlane = nearPlane;
+    frustum.farPlane = farPlane;
+    frustum.fov = FOVdeg;
 }
 
 void Camera::update(double alpha)
@@ -17,14 +18,17 @@ void Camera::update(double alpha)
     intp.pos = prev.pos + (float)alpha * (curr.pos - prev.pos);
     intp.rot = glm::slerp(prev.rot, curr.rot, (float)alpha);
 
-    glm::mat4 rotation = glm::mat4_cast(glm::conjugate(intp.rot));
-    glm::mat4 transformation = glm::translate(glm::mat4(1.0f), -intp.pos);
-    
-    cameraMatrix = projection * (rotation * transformation);
+    glm::mat4 rot = glm::mat4_cast(glm::conjugate(intp.rot));
+    glm::mat4 trans = glm::translate(glm::mat4(1.0f), -intp.pos);
+    glm::mat4 proj = glm::perspective(glm::radians(frustum.fov), frustum.ASPECT, frustum.nearPlane, frustum.farPlane);
+
+    cameraMatrix = proj * rot * trans;
 }
 
 void Camera::fixedInput(GLFWwindow* window, double deltaTime) 
 {    
+    prev = curr;
+
     // ===== ROTACIÓN =====
     float yaw   = -mouseDX * sensitivity;
     float pitch = -mouseDY * sensitivity;
@@ -74,7 +78,7 @@ void Camera::captureMouse(GLFWwindow* window)
 
     if (firstClick)
     {
-        glfwSetCursorPos(window, width / 2.0, height / 2.0);
+        glfwSetCursorPos(window, frustum.width / 2.0, frustum.height / 2.0);
         firstClick = false;
         return;
     }
@@ -82,8 +86,16 @@ void Camera::captureMouse(GLFWwindow* window)
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 
-    mouseDX += float(x - width  * 0.5f);
-    mouseDY += float(y - height * 0.5f);
+    mouseDX += float(x - frustum.width  * 0.5f);
+    mouseDY += float(y - frustum.height * 0.5f);
 
-    glfwSetCursorPos(window, width * 0.5, height * 0.5);
+    glfwSetCursorPos(window, frustum.width * 0.5, frustum.height * 0.5);
+}
+
+void Camera::updateScroll(double scroll_delta)
+{
+    if (scroll_delta == 0) return;
+    frustum.fov -= scroll_delta;
+    if(frustum.fov < 1.0f) frustum.fov = 1.0f;
+    if(frustum.fov > 120.0f) frustum.fov = 120.0f;
 }

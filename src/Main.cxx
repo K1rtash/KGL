@@ -1,11 +1,12 @@
 #define GLFW_INCLUDE_NONE
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <stb/stb_image.h>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glad/glad.h"
+#include "GLFW/glfw3.h"
+#include "stb/stb_image.h"
+#include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include "Model.h"
+#include "Mesh.h"
 
 #include <iostream>
 #include <algorithm>
@@ -17,12 +18,15 @@ struct KGL_WindowConfig {
     const float LOGICAL_WIDTH = 1920.0f, LOGICAL_HEIGHT = 1080.0f, LOGICAL_ASPECT = LOGICAL_WIDTH / LOGICAL_HEIGHT;
 };
 
+double mouseScrollDelta;
+
 void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 
-int main() {
+int main(void) {
     KGL_WindowConfig windowConfig;
     windowConfig.windowMode = WINDOWMODE_WINDOWED;
     windowConfig.vsync = 1;
@@ -72,20 +76,97 @@ int main() {
 
     glfwSetErrorCallback(error_callback);
     glfwSetWindowSizeCallback(window, resize_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSwapInterval(windowConfig.vsync);
 
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
-
-
-    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-    glm::vec3 lightPos = glm::vec3(0.5f, 0.5f, 0.5f);
-    glm::mat4 lightModel = glm::mat4(1.0f);
-    lightModel = glm::translate(lightModel, lightPos);
         
     Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
-    Model model{"../models/bunny/scene.gltf"};    
+    Shader lightShaderProgram{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
+    Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
+
+    Vertex vertices[] =
+    { //               COORDINATES           /            COLORS          /           NORMALS         /       TEXTURE COORDINATES    //
+        Vertex{glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
+        Vertex{glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
+        Vertex{glm::vec3( 1.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
+        Vertex{glm::vec3( 1.0f, 0.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 0.0f)}
+    };
+
+    // Indices for vertices order
+    GLuint indices[] =
+    {
+        0, 1, 2,
+        0, 2, 3
+    };
+
+    RawTexData td0, td1;
+    td0.file = "../textures/planks.png";    
+    td1.file = "../textures/planksSpec.png";
+
+    if (Texture::resolveData(&td0) && Texture::resolveData(&td1) ) {
+        printf("tex data resolved!");
+    } else {
+        printf("TEX DATA CANT BE RESOLVED");
+        return 1;
+    }
+
+    Texture textures[]
+	{
+		Texture(&td0, 0, TextureType::DIFFUSE),
+		Texture(&td1, 1, TextureType::SPECULAR)
+	};
+
+    std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
+	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
+    std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
+
+    Mesh model{verts, ind, tex};    
+    glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
+    Transform modelTrans;
+    modelTrans.r = rot_modelo;
+    modelTrans.s = glm::vec3{100.0f, 100.0f, 100.0f};
+    modelTrans.t = glm::vec3{1.0, 1.0, 1.0};
+
+    Vertex lightVertices[] =
+    { //     COORDINATES     //
+        Vertex{glm::vec3(-0.1f, -0.1f,  0.1f)},
+        Vertex{glm::vec3(-0.1f, -0.1f, -0.1f)},
+        Vertex{glm::vec3(0.1f, -0.1f, -0.1f)},
+        Vertex{glm::vec3(0.1f, -0.1f,  0.1f)},
+        Vertex{glm::vec3(-0.1f,  0.1f,  0.1f)},
+        Vertex{glm::vec3(-0.1f,  0.1f, -0.1f)},
+        Vertex{glm::vec3(0.1f,  0.1f, -0.1f)},
+        Vertex{glm::vec3(0.1f,  0.1f,  0.1f)}
+    };
+
+    GLuint lightIndices[] =
+    {
+        0, 1, 2,
+        0, 2, 3,
+        0, 4, 7,
+        0, 7, 3,
+        3, 7, 6,
+        3, 6, 2,
+        2, 6, 5,
+        2, 5, 1,
+        1, 5, 4,
+        1, 4, 0,
+        4, 5, 6,
+        4, 6, 7
+    };
+
+    std::vector <Vertex> Lverts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
+	std::vector <GLuint> Lind(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
+
+    Mesh lightModel{Lverts, Lind, tex};    
+    Transform lightModelTrans;
+    lightModelTrans.r = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
+    lightModelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
+    lightModelTrans.t = glm::vec3{0.5, 1.5, 0.5};
+    glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glEnable(GL_DEPTH_TEST);
@@ -94,11 +175,7 @@ int main() {
     glCullFace(GL_FRONT);
     glFrontFace(GL_CCW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);
-    
-    
-    Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
-    glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
+    if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);   
     
     const double FIXED_TIMESTEP = 1.0 / 60.0;
     const unsigned int MAX_STEPS = 5;
@@ -122,7 +199,6 @@ int main() {
         accumulator += deltaTime;
         unsigned int steps = 0;
 
-        camera.prev = camera.curr;
         camera.captureMouse(window);
 
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
@@ -131,8 +207,7 @@ int main() {
                 shaderProgram.Reload();
             }
             if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-                lightPos = camera.intp.pos;
-                lightModel = glm::translate(glm::mat4(1.0f), camera.intp.pos);
+                lightModelTrans.t = camera.getTransform()->pos;
             }
             if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
                 s += 0.03f;
@@ -159,7 +234,10 @@ int main() {
                 if(v > 1.0f) v = 1.0f;  
             }
             if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
-            if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
+            if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+                std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
+                camera.setViewport(45.0f, 0.1f, 100.0f);
+            }
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
@@ -170,8 +248,10 @@ int main() {
             HSVtoRGB(h/360.0f, s, v, lr, lg, lb);
     
             shaderProgram.Activate();
-            glUniform3f(shaderProgram.GetUniformLoc("lightPos"), lightPos.x, lightPos.y, lightPos.z);
-            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
+            glUniform3fv(glGetUniformLocation(shaderProgram.id, "lightPos"), 1, glm::value_ptr(lightModelTrans.t));
+            glUniform4f(shaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);            
+            lightShaderProgram.Activate();
+            glUniform4f(lightShaderProgram.GetUniformLoc("lightColor"), lr, lg, lb, 1.0f);
             //outlineShader.Activate();
             //glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
 
@@ -180,7 +260,8 @@ int main() {
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
-            rot_modelo = glm::normalize(nueva_rot);
+            //rot_modelo = glm::normalize(nueva_rot);
+            modelTrans = {glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0}};
 
             accumulator -= FIXED_TIMESTEP;
             steps++;
@@ -190,11 +271,14 @@ int main() {
                 
         double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);        
         
+        camera.updateScroll(mouseScrollDelta);
         camera.update(alpha);
         
-        model.Draw(&shaderProgram, &camera, glm::vec3{1.0, 1.0, 1.0}, rot_modelo, glm::vec3{10.0, 10.0, 10.0});
+        model.Draw(&shaderProgram, &camera, &modelTrans);
+        lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
+        mouseScrollDelta = 0;
     }
         
     shaderProgram.Delete();
@@ -214,6 +298,11 @@ void resize_callback(GLFWwindow *window, int width, int height)
     wcfg->width = width, wcfg->height = height;
 
     setLogicalPresentation(width, height, wcfg->LOGICAL_ASPECT);
+}
+
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
+{
+    mouseScrollDelta += yoffset;
 }
 
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT) 

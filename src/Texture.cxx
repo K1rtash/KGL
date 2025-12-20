@@ -3,22 +3,23 @@
 #include <iostream>
 #include <string>
 
-Texture::Texture(const char* path, const char* texType, GLuint slot) : type{texType}, unit{slot} 
+int Texture::resolveData(RawTexData* data) 
 {
-    int numColCh;
     stbi_set_flip_vertically_on_load(true);
+    data->bytes = stbi_load(data->file.c_str(), &(data->width), &(data->height), &(data->clrch), 0);
 
-    unsigned char* bytes = stbi_load(path, &width, &height, &numColCh, 0);
+    std::cout << "[INFO] Loading texture from disc '" << data->file << "' (" << data->width << "x" << data->height << ") colorch: " << data->clrch << std::endl;
+    if(data->clrch > 4) data->clrch = 4;
 
-    std::cout << "[INFO] Loading image '" << path << "' (" << width << "x" << height << ") colorch: " << numColCh << std::endl;
-    if(numColCh > 4) numColCh = 4;
-    
-    if(bytes == nullptr) throw std::runtime_error("ERROR::TEXTURE::LOAD_FAILED (" + std::string(path) + ")");
-   
+    return (data->bytes != nullptr);
+}
+
+Texture::Texture(RawTexData* data, GLuint slot, TextureType type) : type{type}, unit{slot} 
+{
     glGenTextures(1, &id);
     Bind();
 
-    // Configures the type of algorithm that is used to make the image smaller or bigger
+    // Configures the type of algorithm that is used to make the image smaller or bigger (MIPMAP)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    
@@ -26,24 +27,22 @@ Texture::Texture(const char* path, const char* texType, GLuint slot) : type{texT
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    switch(numColCh) {
-        case 4:
-            format = GL_RGBA;
-            break;
-        case 3:
-            format = GL_RGB;
-            break;
-        case 1:
-            format = GL_RED;
-            break;
-        default:
-            throw std::runtime_error("invalid texture channel number: " + std::to_string(numColCh));
+    if (data->clrch >= 4) 
+        format = GL_RGBA;
+    else 
+    {
+        switch ( data->clrch ) {
+            case 3: format = GL_RGB; break;
+            case 2: format = GL_RG; break;
+            case 1: format = GL_RED; break;
+            default: throw std::runtime_error("invalid texture channel number: " + std::to_string(data->clrch));
+        }
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, format, GL_UNSIGNED_BYTE, bytes); // Assigns the image to the OpenGL Texture object
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data->width, data->height, 0, format, GL_UNSIGNED_BYTE, data->bytes); // Assigns the image to the OpenGL Texture object
     glGenerateMipmap(GL_TEXTURE_2D); // Generates MipMaps
 
-    stbi_image_free(bytes);
+    stbi_image_free(data->bytes);
     Unbind();
 }
 
