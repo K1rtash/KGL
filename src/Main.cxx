@@ -10,13 +10,14 @@
 
 #include <iostream>
 #include <algorithm>
+#include <string>
 
 enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
-enum class KGL_KeyState : unsigned int {PRESS, HELD, RELEASE, NONE};
+enum class KGL_KeyState : unsigned int {PRESS, HOLD, RELEASE, NONE};
 
 struct KGL_WindowConfig 
 {
-    int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 1, useMouseCallback = 0, isFocused = 1;
+    int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 0, isFocused = 1;
     const float LOGICAL_WIDTH = 1920.0f, LOGICAL_HEIGHT = 1080.0f, LOGICAL_ASPECT = LOGICAL_WIDTH / LOGICAL_HEIGHT;
 } windowConfig;
 
@@ -38,6 +39,8 @@ struct KGL_KeyboardState
 {
     bool prev = false;      // estado anterior
     bool curr = false;      // estado actual
+    bool consumed = false;
+    KGL_KeyState state = KGL_KeyState::NONE;
 };
 
 KGL_KeyboardState keyState[GLFW_KEY_LAST];
@@ -54,10 +57,12 @@ void updateKeyboard(GLFWwindow* window);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 KGL_KeyState getKey(int key);
+void resolveArgs(int argc, char* argv[]);
 
-int main(void) {
-    windowConfig.windowMode = WINDOWMODE_WINDOWED;
-    windowConfig.vsync = 1;
+int main(int argc, char *argv[]) 
+{
+    resolveArgs(argc, argv);
+
     glfwInit();
 
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
@@ -108,11 +113,7 @@ int main(void) {
     glfwSetWindowFocusCallback(window, window_focus_callback);
     glfwSetKeyCallback(window, key_callback);
 
-    if ( glfwRawMouseMotionSupported() ) 
-    {
-        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-        windowConfig.useMouseCallback = 1;
-    }
+    if ( glfwRawMouseMotionSupported() ) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSwapInterval(windowConfig.vsync);
@@ -240,6 +241,11 @@ int main(void) {
         float mouseDY = mouseState.dy;
         float mouseScroll = mouseState.scrollDelta;
 
+        if(mouseState.captured) {
+            camera.updateCursor(mouseDX, mouseDY);
+            camera.updateScroll(mouseScroll);
+        }
+
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
 
             if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::PRESS) {
@@ -290,10 +296,6 @@ int main(void) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
 
-            if(mouseState.captured) {
-                camera.updateCursor(mouseDX, mouseDY);
-                camera.updateScroll(mouseScroll);
-            }
             camera.updateFixedInput(window, FIXED_TIMESTEP);
 
             double fps = 1.0 / deltaTime; 
@@ -407,6 +409,13 @@ void updateKeyboard(GLFWwindow* window)
     {
         keyState[i].prev = keyState[i].curr;
         keyState[i].curr = (glfwGetKey(window, i) == GLFW_PRESS);
+
+        keyState[i].state = KGL_KeyState::NONE;
+        keyState[i].consumed = false;
+
+        if(keyState[i].curr && !keyState[i].prev) keyState[i].state = KGL_KeyState::PRESS;
+        if(keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::HOLD;
+        if(!keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::RELEASE;        
     }
 }
 
@@ -449,11 +458,36 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
 
 KGL_KeyState getKey(int key)
 {
-    bool prev = keyState[key].prev;
-    bool curr = keyState[key].curr;
+    if(keyState[key].consumed)
+        return KGL_KeyState::NONE;
 
-    if(curr && !prev) return KGL_KeyState::PRESS;
-    if(curr && prev) return KGL_KeyState::HELD;
-    if(!curr && prev) return KGL_KeyState::RELEASE;
-    return KGL_KeyState::NONE;
+    if(keyState[key].state == KGL_KeyState::PRESS) 
+    {
+        keyState[key].consumed = true;
+        return KGL_KeyState::PRESS;
+    }
+    
+    return keyState[key].state;
+}
+
+void resolveArgs(int argc, char* argv[])
+{
+    if(argc <= 0) return;
+    try {
+        printf("[INFO] Resolving %d arguments\n", argc-1);
+
+        for( int i = 1; i < argc; i++ ) 
+        {
+            std::string token = argv[i];
+            std::cout << "Token " << i << ": " << token << std::endl;
+
+            if(token.find("-vsync") == 0) 
+                windowConfig.vsync = 1;
+            
+            if(token.find("-winmod") == 0)
+                windowConfig.windowMode = std::stoi(token.substr(7));
+        }
+    } catch(const std::exception& e) {
+        printf("[ERROR] while resolving arguments\n");
+    }
 }
