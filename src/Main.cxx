@@ -11,9 +11,12 @@
 #include <iostream>
 #include <algorithm>
 #include <string>
+#include <thread>
 
 enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
 enum class KGL_KeyState : unsigned int {PRESS, HOLD, RELEASE, NONE};
+
+int delay_s = 0;
 
 struct KGL_WindowConfig 
 {
@@ -39,7 +42,6 @@ struct KGL_KeyboardState
 {
     bool prev = false;      // estado anterior
     bool curr = false;      // estado actual
-    bool consumed = false;
     KGL_KeyState state = KGL_KeyState::NONE;
 };
 
@@ -217,13 +219,16 @@ int main(int argc, char *argv[])
     const unsigned int MAX_STEPS = 5;
     double prevTime = glfwGetTime();
     double currentTime = 0.0;
-    double deltaTime = 0.0;
     double accumulator = 0.0;
     float h = 0, s = 0.0, v = 1.0;
+    double contador_ms = 0;
+    int contador_ticks = 0;
+    int contador_frames = 0;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
+        updateKeyboard(window);
         
         if (!windowConfig.isFocused) {
             accumulator = 0.0;
@@ -231,12 +236,11 @@ int main(int argc, char *argv[])
         }
 
         currentTime = glfwGetTime();
-        deltaTime = std::min((currentTime - prevTime), 0.25);
+        double deltaTime = currentTime - prevTime;
         prevTime = currentTime;
         accumulator += deltaTime;
         unsigned int steps = 0;
 
-        updateKeyboard(window);
         float mouseDX = mouseState.dx;
         float mouseDY = mouseState.dy;
         float mouseScroll = mouseState.scrollDelta;
@@ -246,7 +250,12 @@ int main(int argc, char *argv[])
             camera.updateScroll(mouseScroll);
         }
 
-        while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
+        double tickTime = 0.0;
+        double tick_este_frame = 0.0;
+
+        while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) 
+        {
+            double tickTime_prev = glfwGetTime();
 
             if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::PRESS) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -254,37 +263,37 @@ int main(int argc, char *argv[])
                 mouseState.captured = 0;
             }
 
-            if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
+            if (getKey(GLFW_KEY_R) == KGL_KeyState::PRESS) { 
                 shaderProgram.Reload();
             }
-            if(glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_X) == KGL_KeyState::PRESS) {
                 lightModelTrans.t = camera.getTransform()->pos;
             }
-            if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_UP) == KGL_KeyState::PRESS) {
                 s += 0.03f;
                 if(s > 1.0f) s = 1.0f;  
             }        
-            if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_DOWN) == KGL_KeyState::PRESS) {
                 s -= 0.03f;
                 if(s < 0.0f) s = 0.0f;  
             }
-            if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_LEFT) == KGL_KeyState::PRESS) {
                 h -= 1.0f;
                 if(h < 0.0f) h = 0.0f;  
             }        
-            if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_RIGHT) == KGL_KeyState::PRESS) {
                 h += 1.0f;
                 if(h > 360.0f) h = 360.0f;  
             }
-            if(glfwGetKey(window, GLFW_KEY_O) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_O) == KGL_KeyState::PRESS) {
                 v -= 0.03f;
                 if(v < 0.0f) v = 0.0f;  
             }        
-            if(glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+            if(getKey(GLFW_KEY_L) == KGL_KeyState::PRESS) {
                 v += 0.03f;
                 if(v > 1.0f) v = 1.0f;  
             }
-            if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+            if(getKey(GLFW_KEY_C) == KGL_KeyState::PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
             
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
                 std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
@@ -320,8 +329,16 @@ int main(int argc, char *argv[])
             //rot_modelo = glm::normalize(nueva_rot);
             modelTrans.r = rot_modelo;
 
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_s));
+
             accumulator -= FIXED_TIMESTEP;
             steps++;
+            contador_ticks++;
+
+            double tickTime_now = glfwGetTime();
+            tickTime = tickTime_now - tickTime_prev;
+            if(tickTime >= 0.1) printf("[WARNING] a single tick took %d ms!", tickTime);
+            tick_este_frame += tickTime - 0.1;
         }        
         resetMouseState(mouseState);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -335,6 +352,19 @@ int main(int argc, char *argv[])
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
+
+        if(tickTime >= 0.1) std::cout << contador_ticks << " han tardado un total de " << tick_este_frame << "s\n";
+        //if((tickTime/tick_este_frame)*1000 >= 1.0 )
+           // std::cout << "se ejecutaron " << tick_este_frame << " ticks este frame que tardaron " << tickTime << "s o sea que un solo tick tardo " << (tickTime/tick_este_frame)*1000 << "ms\n";
+
+        contador_frames++;
+        contador_ms += deltaTime;
+        if(contador_ms >= 1.0) {
+            std::cout << "En " << contador_ms << "s se han procesado " << contador_ticks << " ticks y " << contador_frames << " frames" << std::endl; 
+            contador_ms = 0.0;
+            contador_frames = 0.0;
+            contador_ticks = 0.0;
+        }
     }
         
     shaderProgram.Delete();
@@ -411,10 +441,9 @@ void updateKeyboard(GLFWwindow* window)
         keyState[i].curr = (glfwGetKey(window, i) == GLFW_PRESS);
 
         keyState[i].state = KGL_KeyState::NONE;
-        keyState[i].consumed = false;
 
-        if(keyState[i].curr && !keyState[i].prev) keyState[i].state = KGL_KeyState::PRESS;
-        if(keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::HOLD;
+        if(keyState[i].curr && !keyState[i].prev) keyState[i].state = KGL_KeyState::PRESS; 
+        if(keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::HOLD; 
         if(!keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::RELEASE;        
     }
 }
@@ -458,15 +487,6 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
 
 KGL_KeyState getKey(int key)
 {
-    if(keyState[key].consumed)
-        return KGL_KeyState::NONE;
-
-    if(keyState[key].state == KGL_KeyState::PRESS) 
-    {
-        keyState[key].consumed = true;
-        return KGL_KeyState::PRESS;
-    }
-    
     return keyState[key].state;
 }
 
@@ -486,6 +506,9 @@ void resolveArgs(int argc, char* argv[])
             
             if(token.find("-winmod") == 0)
                 windowConfig.windowMode = std::stoi(token.substr(7));
+
+            if(token.find("-D") == 0)
+                delay_s = std::stoi(token.substr(2, 3));
         }
     } catch(const std::exception& e) {
         printf("[ERROR] while resolving arguments\n");
