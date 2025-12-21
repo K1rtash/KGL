@@ -1,22 +1,25 @@
 #define GLFW_INCLUDE_NONE
-#include "glad/glad.h"
-#include "GLFW/glfw3.h"
-#include "stb/stb_image.h"
-#include "glm/gtc/matrix_transform.hpp"
-#include "glm/gtc/type_ptr.hpp"
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <stb/stb_image.h>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #include "Model.h"
 #include "Mesh.h"
+#include "Input.h"
 
 #include <iostream>
 #include <algorithm>
 #include <string>
 #include <thread>
+#include <csignal>
 
 enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
-enum class KGL_KeyState : unsigned int {PRESS, HOLD, RELEASE, NONE};
+
 
 int delay_s = 0;
+volatile int should_exit = 0;
 
 struct KGL_WindowConfig 
 {
@@ -38,15 +41,6 @@ void resetMouseState(KGL_MouseState& m)
     m.scrollDelta = 0.0;
 }
 
-struct KGL_KeyboardState 
-{
-    bool prev = false;      // estado anterior
-    bool curr = false;      // estado actual
-    KGL_KeyState state = KGL_KeyState::NONE;
-};
-
-KGL_KeyboardState keyState[GLFW_KEY_LAST];
-
 
 void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
@@ -55,14 +49,18 @@ void cursor_callback(GLFWwindow* window, double xpos, double ypos);
 void window_focus_callback(GLFWwindow* window, int focused);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
-void updateKeyboard(GLFWwindow* window);
+
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
-KGL_KeyState getKey(int key);
 void resolveArgs(int argc, char* argv[]);
+
+void handle_sigint(int) {
+    should_exit = 0;
+}
 
 int main(int argc, char *argv[]) 
 {
+    std::signal(SIGINT, handle_sigint);
     resolveArgs(argc, argv);
 
     glfwInit();
@@ -224,11 +222,11 @@ int main(int argc, char *argv[])
     double contador_ms = 0;
     int contador_ticks = 0;
     int contador_frames = 0;
+    double contador_lag = 0.0;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    while(!glfwWindowShouldClose(window)) 
+    while(!glfwWindowShouldClose(window) && !should_exit) 
     {
         glfwPollEvents();
-        updateKeyboard(window);
         
         if (!windowConfig.isFocused) {
             accumulator = 0.0;
@@ -237,9 +235,10 @@ int main(int argc, char *argv[])
 
         currentTime = glfwGetTime();
         double deltaTime = currentTime - prevTime;
+        unsigned int steps = 0;
         prevTime = currentTime;
         accumulator += deltaTime;
-        unsigned int steps = 0;
+        contador_lag += deltaTime;
 
         float mouseDX = mouseState.dx;
         float mouseDY = mouseState.dy;
@@ -250,50 +249,48 @@ int main(int argc, char *argv[])
             camera.updateScroll(mouseScroll);
         }
 
-        double tickTime = 0.0;
-        double tick_este_frame = 0.0;
-
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) 
         {
             double tickTime_prev = glfwGetTime();
+            updateKeyboard(window);
 
-            if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::Press) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 if(!mouseState.captured) glfwSetWindowShouldClose(window, 1);
                 mouseState.captured = 0;
             }
 
-            if (getKey(GLFW_KEY_R) == KGL_KeyState::PRESS) { 
+            if (getKey(GLFW_KEY_R) == KGL_KeyState::Press) { 
                 shaderProgram.Reload();
             }
-            if(getKey(GLFW_KEY_X) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_X) == KGL_KeyState::Press) {
                 lightModelTrans.t = camera.getTransform()->pos;
             }
-            if(getKey(GLFW_KEY_UP) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_UP) == KGL_KeyState::Press) {
                 s += 0.03f;
                 if(s > 1.0f) s = 1.0f;  
             }        
-            if(getKey(GLFW_KEY_DOWN) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_DOWN) == KGL_KeyState::Press) {
                 s -= 0.03f;
                 if(s < 0.0f) s = 0.0f;  
             }
-            if(getKey(GLFW_KEY_LEFT) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_LEFT) == KGL_KeyState::Press) {
                 h -= 1.0f;
                 if(h < 0.0f) h = 0.0f;  
             }        
-            if(getKey(GLFW_KEY_RIGHT) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_RIGHT) == KGL_KeyState::Press) {
                 h += 1.0f;
                 if(h > 360.0f) h = 360.0f;  
             }
-            if(getKey(GLFW_KEY_O) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_O) == KGL_KeyState::Press) {
                 v -= 0.03f;
                 if(v < 0.0f) v = 0.0f;  
             }        
-            if(getKey(GLFW_KEY_L) == KGL_KeyState::PRESS) {
+            if(getKey(GLFW_KEY_L) == KGL_KeyState::Press) {
                 v += 0.03f;
                 if(v > 1.0f) v = 1.0f;  
             }
-            if(getKey(GLFW_KEY_C) == KGL_KeyState::PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+            if(getKey(GLFW_KEY_C) == KGL_KeyState::Press) h = 0.0f, s = 0.0f, v = 1.0f;
             
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
                 std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
@@ -335,17 +332,20 @@ int main(int argc, char *argv[])
             steps++;
             contador_ticks++;
 
-            double tickTime_now = glfwGetTime();
-            tickTime = tickTime_now - tickTime_prev;
-            if(tickTime >= 0.1) printf("[WARNING] a single tick took %d ms!", tickTime);
-            tick_este_frame += tickTime - 0.1;
+            contador_lag -= FIXED_TIMESTEP;
         }        
+
+        if (steps == MAX_STEPS) {
+            accumulator = 0.0;
+            contador_lag = 0.0;
+        }
+
         resetMouseState(mouseState);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 
-        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);        
-        
+        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);  
+
         camera.updateMatrix(alpha);
         
         model.Draw(&shaderProgram, &camera, &modelTrans);
@@ -353,14 +353,17 @@ int main(int argc, char *argv[])
         
         glfwSwapBuffers(window);
 
-        if(tickTime >= 0.1) std::cout << contador_ticks << " han tardado un total de " << tick_este_frame << "s\n";
-        //if((tickTime/tick_este_frame)*1000 >= 1.0 )
-           // std::cout << "se ejecutaron " << tick_este_frame << " ticks este frame que tardaron " << tickTime << "s o sea que un solo tick tardo " << (tickTime/tick_este_frame)*1000 << "ms\n";
 
         contador_frames++;
         contador_ms += deltaTime;
         if(contador_ms >= 1.0) {
-            std::cout << "En " << contador_ms << "s se han procesado " << contador_ticks << " ticks y " << contador_frames << " frames" << std::endl; 
+            std::cout << "[DEBUG] in " << contador_ms << "s " << contador_ticks << " ticks and " << contador_frames << " frames were processed" << std::endl; 
+            if( contador_lag > FIXED_TIMESTEP ) 
+            {
+                double msBehind = contador_lag * 1000.0;
+                int ticksBehind = (int)(contador_lag / FIXED_TIMESTEP);
+                printf("[WARNING] Can't keep up! Is the server overloaded? Running %d ticks or %.2fms behind!\n", ticksBehind, msBehind);
+            }
             contador_ms = 0.0;
             contador_frames = 0.0;
             contador_ticks = 0.0;
@@ -415,37 +418,24 @@ void window_focus_callback(GLFWwindow* window, int focused)
     if(focused) {
         if(mouseState.captured) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         windowConfig.isFocused = 1;
-        printf("Window is focused!");
+        printf("[DEBUG] Window is focused!\n");
     }
     else {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         windowConfig.isFocused = 0;
         mouseState.captured = 0;
-        printf("Window focus lost!");
+        printf("[DEBUG] Window focus lost!\n");
     }
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if(key == GLFW_KEY_Q && action == GLFW_PRESS) {
-        printf("Terminating application");
-        exit(EXIT_FAILURE);
-    }
-}
+    if (key < GLFW_KEY_SPACE || key >= GLFW_KEY_LAST) return;
 
-void updateKeyboard(GLFWwindow* window)
-{
-    for (int i = GLFW_KEY_SPACE; i < GLFW_KEY_LAST; i++)
-    {
-        keyState[i].prev = keyState[i].curr;
-        keyState[i].curr = (glfwGetKey(window, i) == GLFW_PRESS);
-
-        keyState[i].state = KGL_KeyState::NONE;
-
-        if(keyState[i].curr && !keyState[i].prev) keyState[i].state = KGL_KeyState::PRESS; 
-        if(keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::HOLD; 
-        if(!keyState[i].curr && keyState[i].prev) keyState[i].state = KGL_KeyState::RELEASE;        
-    }
+    if (action == GLFW_PRESS) 
+        keyboard[key] = true;
+    else if (action == GLFW_RELEASE) 
+        keyboard[key] = false;
 }
 
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT) 
@@ -483,11 +473,6 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
         case 4: r = t; g = p; b = v; break;
         case 5: r = v; g = p; b = q; break;
     }
-}
-
-KGL_KeyState getKey(int key)
-{
-    return keyState[key].state;
 }
 
 void resolveArgs(int argc, char* argv[])

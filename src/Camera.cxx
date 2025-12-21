@@ -1,4 +1,5 @@
 #include "Camera.h"
+#include "Input.h"
 
 Camera::Camera(float width, float height, glm::vec3 position) : 
     curr{position, glm::quat(1, 0, 0, 0)}, frustum{45.0f, 0.1f, 100.0f, width, height, std::max(0.1f, width / height)}
@@ -27,6 +28,13 @@ void Camera::updateMatrix(double alpha)
 void Camera::updateFixedInput(GLFWwindow* window, double deltaTime) 
 {    
     prev = curr;
+    bool key_W = (getKey(GLFW_KEY_W) == KGL_KeyState::Press || getKey(GLFW_KEY_W) == KGL_KeyState::Hold);
+    bool key_A = (getKey(GLFW_KEY_A) == KGL_KeyState::Press || getKey(GLFW_KEY_A) == KGL_KeyState::Hold);
+    bool key_S = (getKey(GLFW_KEY_S) == KGL_KeyState::Press || getKey(GLFW_KEY_S) == KGL_KeyState::Hold);
+    bool key_D = (getKey(GLFW_KEY_D) == KGL_KeyState::Press || getKey(GLFW_KEY_D) == KGL_KeyState::Hold);
+    bool key_SPACE = (getKey(GLFW_KEY_SPACE) == KGL_KeyState::Press || getKey(GLFW_KEY_SPACE) == KGL_KeyState::Hold);
+    bool key_LCTRL = (getKey(GLFW_KEY_LEFT_CONTROL) == KGL_KeyState::Press || getKey(GLFW_KEY_LEFT_CONTROL) == KGL_KeyState::Hold);
+    bool key_LSHIFT = (getKey(GLFW_KEY_LEFT_SHIFT) == KGL_KeyState::Press || getKey(GLFW_KEY_LEFT_SHIFT) == KGL_KeyState::Hold);
 
     // ===== ROTACIÓN =====
     float dx = -mouseDX * sensitivity; // aquí asume que sensitivity está en grados por píxel
@@ -57,16 +65,17 @@ void Camera::updateFixedInput(GLFWwindow* window, double deltaTime)
     glm::vec3 VecUp = glm::vec3(0,1,0);
 
     float speed0 = speed;
-    if(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) speed0 *= 2.0f;
+    if(key_LSHIFT) speed0 *= 2.0f;
     
     float vel = speed0 * (float)deltaTime;
 
-    if (glfwGetKey(window, GLFW_KEY_W)) curr.pos += VecForward * vel;
-    if (glfwGetKey(window, GLFW_KEY_S)) curr.pos -= VecForward * vel;
-    if (glfwGetKey(window, GLFW_KEY_A)) curr.pos -= VecRight * vel;
-    if (glfwGetKey(window, GLFW_KEY_D)) curr.pos += VecRight * vel;
-    if (glfwGetKey(window, GLFW_KEY_SPACE)) curr.pos += VecUp * vel;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) curr.pos -= VecUp * vel;
+
+    if (key_W) curr.pos += VecForward * vel;
+    if (key_S) curr.pos -= VecForward * vel;
+    if (key_A) curr.pos -= VecRight * vel;
+    if (key_D) curr.pos += VecRight * vel;
+    if (key_SPACE) curr.pos += VecUp * vel;
+    if (key_LCTRL) curr.pos -= VecUp * vel;
 }
 
 /*void Camera::captureMouse(GLFWwindow* window)
