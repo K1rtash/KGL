@@ -11,23 +11,51 @@
 #include <iostream>
 #include <algorithm>
 
-enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED};
+enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
+enum class KGL_KeyState : unsigned int {PRESS, HELD, RELEASE, NONE};
 
-struct KGL_WindowConfig {
-    int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 1;
+struct KGL_WindowConfig 
+{
+    int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 1, useMouseCallback = 0, isFocused = 1;
     const float LOGICAL_WIDTH = 1920.0f, LOGICAL_HEIGHT = 1080.0f, LOGICAL_ASPECT = LOGICAL_WIDTH / LOGICAL_HEIGHT;
+} windowConfig;
+
+struct KGL_MouseState
+{
+    double scrollDelta;
+    float dx = 0.0, dy = 0.0;
+    int captured = 1;
+} mouseState;
+
+void resetMouseState(KGL_MouseState& m)
+{
+    m.dx = 0.0;
+    m.dy = 0.0;
+    m.scrollDelta = 0.0;
+}
+
+struct KGL_KeyboardState 
+{
+    bool prev = false;      // estado anterior
+    bool curr = false;      // estado actual
 };
 
-double mouseScrollDelta;
+KGL_KeyboardState keyState[GLFW_KEY_LAST];
+
 
 void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void cursor_callback(GLFWwindow* window, double xpos, double ypos);
+void window_focus_callback(GLFWwindow* window, int focused);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
+
+void updateKeyboard(GLFWwindow* window);
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
+KGL_KeyState getKey(int key);
 
 int main(void) {
-    KGL_WindowConfig windowConfig;
     windowConfig.windowMode = WINDOWMODE_WINDOWED;
     windowConfig.vsync = 1;
     glfwInit();
@@ -42,7 +70,6 @@ int main(void) {
     glfwWindowHint(GLFW_REFRESH_RATE, video->refreshRate);
     glfwWindowHint(GLFW_SAMPLES, windowConfig.msaa);
     glfwWindowHint(GLFW_RESIZABLE, !windowConfig.windowMode);
-
 
     switch (windowConfig.windowMode) 
     {
@@ -77,6 +104,15 @@ int main(void) {
     glfwSetErrorCallback(error_callback);
     glfwSetWindowSizeCallback(window, resize_callback);
     glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback(window, cursor_callback);
+    glfwSetWindowFocusCallback(window, window_focus_callback);
+    glfwSetKeyCallback(window, key_callback);
+
+    if ( glfwRawMouseMotionSupported() ) 
+    {
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+        windowConfig.useMouseCallback = 1;
+    }
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSwapInterval(windowConfig.vsync);
@@ -106,10 +142,9 @@ int main(void) {
     td0.file = "../textures/planks.png";    
     td1.file = "../textures/planksSpec.png";
 
-    if (Texture::resolveData(&td0) && Texture::resolveData(&td1) ) {
-        printf("tex data resolved!");
-    } else {
-        printf("TEX DATA CANT BE RESOLVED");
+    if ( !Texture::resolveData(&td0) || !Texture::resolveData(&td1) ) 
+    {
+        printf("[ERROR] Texture data cant be resolved");
         return 1;
     }
 
@@ -184,25 +219,35 @@ int main(void) {
     double deltaTime = 0.0;
     double accumulator = 0.0;
     float h = 0, s = 0.0, v = 1.0;
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     while(!glfwWindowShouldClose(window)) 
     {
         glfwPollEvents();
-        if (!glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        
+        if (!windowConfig.isFocused) {
             accumulator = 0.0;
             continue;
         }
-                
+
         currentTime = glfwGetTime();
         deltaTime = std::min((currentTime - prevTime), 0.25);
         prevTime = currentTime;
         accumulator += deltaTime;
         unsigned int steps = 0;
 
-        camera.captureMouse(window);
+        updateKeyboard(window);
+        float mouseDX = mouseState.dx;
+        float mouseDY = mouseState.dy;
+        float mouseScroll = mouseState.scrollDelta;
 
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) {
-            if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(window, GLFW_TRUE);
+
+            if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::PRESS) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+                if(!mouseState.captured) glfwSetWindowShouldClose(window, 1);
+                mouseState.captured = 0;
+            }
+
             if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) { 
                 shaderProgram.Reload();
             }
@@ -234,10 +279,22 @@ int main(void) {
                 if(v > 1.0f) v = 1.0f;  
             }
             if(glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) h = 0.0f, s = 0.0f, v = 1.0f;
+            
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
                 std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
                 camera.setViewport(45.0f, 0.1f, 100.0f);
             }
+            
+            if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+                mouseState.captured = 1;
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            }
+
+            if(mouseState.captured) {
+                camera.updateCursor(mouseDX, mouseDY);
+                camera.updateScroll(mouseScroll);
+            }
+            camera.updateFixedInput(window, FIXED_TIMESTEP);
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
@@ -255,8 +312,6 @@ int main(void) {
             //outlineShader.Activate();
             //glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
 
-            camera.fixedInput(window, FIXED_TIMESTEP);
-
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
@@ -266,19 +321,18 @@ int main(void) {
             accumulator -= FIXED_TIMESTEP;
             steps++;
         }        
+        resetMouseState(mouseState);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 
         double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);        
         
-        camera.updateScroll(mouseScrollDelta);
-        camera.update(alpha);
+        camera.updateMatrix(alpha);
         
         model.Draw(&shaderProgram, &camera, &modelTrans);
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
-        mouseScrollDelta = 0;
     }
         
     shaderProgram.Delete();
@@ -289,7 +343,7 @@ int main(void) {
     
 void error_callback(int error, const char* description)
 {
-    fprintf(stderr, "Error: %s\n", description);
+    fprintf(stderr, "[GLFW ERROR] %s\n", description);
 }
 
 void resize_callback(GLFWwindow *window, int width, int height)
@@ -302,7 +356,58 @@ void resize_callback(GLFWwindow *window, int width, int height)
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    mouseScrollDelta += yoffset;
+    mouseState.scrollDelta += yoffset;
+}
+
+void cursor_callback(GLFWwindow* window, double xpos, double ypos)
+{
+    static bool first = true;
+    static double lastX, lastY;
+
+    if(first) {
+        lastX = xpos;
+        lastY = ypos;
+        first = false;
+        return;
+    }
+
+    mouseState.dx += float(xpos - lastX);
+    mouseState.dy += float(ypos - lastY);
+
+    lastX = xpos;
+    lastY = ypos;
+}
+
+void window_focus_callback(GLFWwindow* window, int focused)
+{
+    if(focused) {
+        if(mouseState.captured) glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        windowConfig.isFocused = 1;
+        printf("Window is focused!");
+    }
+    else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        windowConfig.isFocused = 0;
+        mouseState.captured = 0;
+        printf("Window focus lost!");
+    }
+}
+
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+    if(key == GLFW_KEY_Q && action == GLFW_PRESS) {
+        printf("Terminating application");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void updateKeyboard(GLFWwindow* window)
+{
+    for (int i = GLFW_KEY_SPACE; i < GLFW_KEY_LAST; i++)
+    {
+        keyState[i].prev = keyState[i].curr;
+        keyState[i].curr = (glfwGetKey(window, i) == GLFW_PRESS);
+    }
 }
 
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT) 
@@ -340,4 +445,15 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
         case 4: r = t; g = p; b = v; break;
         case 5: r = v; g = p; b = q; break;
     }
+}
+
+KGL_KeyState getKey(int key)
+{
+    bool prev = keyState[key].prev;
+    bool curr = keyState[key].curr;
+
+    if(curr && !prev) return KGL_KeyState::PRESS;
+    if(curr && prev) return KGL_KeyState::HELD;
+    if(!curr && prev) return KGL_KeyState::RELEASE;
+    return KGL_KeyState::NONE;
 }

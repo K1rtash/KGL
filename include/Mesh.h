@@ -1,8 +1,8 @@
 #ifndef MESH_CLASS
 #define MESH_CLASS
 
-#include <string>
 #include <vector>
+
 #include "VAO.h"
 #include "EBO.h"
 #include "VBO.h"
