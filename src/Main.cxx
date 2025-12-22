@@ -254,39 +254,48 @@ int main(int argc, char *argv[])
             double tickTime_prev = glfwGetTime();
             updateKeyboard(window);
 
+            auto keyDown = [](KGL_KeyState key) -> bool {return (key == KGL_KeyState::Press || key == KGL_KeyState::Hold); };
+
             if(getKey(GLFW_KEY_ESCAPE) == KGL_KeyState::Press) {
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
                 if(!mouseState.captured) glfwSetWindowShouldClose(window, 1);
                 mouseState.captured = 0;
             }
 
-            if (getKey(GLFW_KEY_R) == KGL_KeyState::Press) { 
+            if ( keyDown(getKey(GLFW_KEY_R)) ) 
+            { 
                 shaderProgram.Reload();
             }
-            if(getKey(GLFW_KEY_X) == KGL_KeyState::Press) {
+            if(getKey(GLFW_KEY_X) == KGL_KeyState::Press) 
+            {
                 lightModelTrans.t = camera.getTransform()->pos;
             }
-            if(getKey(GLFW_KEY_UP) == KGL_KeyState::Press) {
+            if( keyDown(getKey(GLFW_KEY_UP)) ) 
+            {
                 s += 0.03f;
                 if(s > 1.0f) s = 1.0f;  
             }        
-            if(getKey(GLFW_KEY_DOWN) == KGL_KeyState::Press) {
+            if(keyDown(getKey(GLFW_KEY_DOWN))) 
+            {
                 s -= 0.03f;
                 if(s < 0.0f) s = 0.0f;  
             }
-            if(getKey(GLFW_KEY_LEFT) == KGL_KeyState::Press) {
+            if(keyDown(getKey(GLFW_KEY_LEFT))) {
                 h -= 1.0f;
                 if(h < 0.0f) h = 0.0f;  
             }        
-            if(getKey(GLFW_KEY_RIGHT) == KGL_KeyState::Press) {
+            if(keyDown(getKey(GLFW_KEY_RIGHT))) 
+            {
                 h += 1.0f;
                 if(h > 360.0f) h = 360.0f;  
             }
-            if(getKey(GLFW_KEY_O) == KGL_KeyState::Press) {
+            if(keyDown(getKey(GLFW_KEY_O))) 
+            {
                 v -= 0.03f;
                 if(v < 0.0f) v = 0.0f;  
             }        
-            if(getKey(GLFW_KEY_L) == KGL_KeyState::Press) {
+            if(keyDown(getKey(GLFW_KEY_L))) 
+            {
                 v += 0.03f;
                 if(v > 1.0f) v = 1.0f;  
             }
