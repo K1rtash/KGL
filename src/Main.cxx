@@ -19,6 +19,9 @@ enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_B
 
 
 int delay_s = 0;
+bool glcull = false;
+bool gldepthtest = true;
+bool showPrimitives = false;
 volatile int should_exit = 0;
 std::string working_dir;
 
@@ -81,6 +84,9 @@ int main(int argc, char *argv[])
     glfwWindowHint(GLFW_REFRESH_RATE, video->refreshRate);
     glfwWindowHint(GLFW_SAMPLES, windowConfig.msaa);
     glfwWindowHint(GLFW_RESIZABLE, !windowConfig.windowMode);
+    #ifdef __APPLE__
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    #endif
 
     switch (windowConfig.windowMode) 
     {
@@ -169,6 +175,21 @@ int main(int argc, char *argv[])
     modelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
     modelTrans.t = glm::vec3{1.0, 1.0, 1.0};
 
+    Model modelo0{relativeDir("models/bunny/scene.gltf").c_str()};
+    Transform modelTrans0;
+    modelTrans0.r = glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,0,1))};
+    // Para rotar un quat se crea un nuevo quat y se multiplican, luego se normaliza
+    modelTrans0.r *= glm::quat{glm::angleAxis(glm::radians(-90.0f), glm::vec3(0,1,0))};
+    modelTrans0.r = glm::normalize(modelTrans0.r);
+    modelTrans0.s = glm::vec3{10.0, 10.0, 10.0};
+    modelTrans0.t = glm::vec3{1.0, 2.0, 1.0};
+    
+    Model modelo1{relativeDir("models/statue/scene.gltf").c_str()};
+    Transform modelTrans1;
+    modelTrans1.r = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
+    modelTrans1.s = glm::vec3{3.0, 3.0, 3.0};
+    modelTrans1.t = glm::vec3{1.0, 5.0, 1.0};
+
     Vertex lightVertices[] =
     { //     COORDINATES     //
         Vertex{glm::vec3(-0.1f, -0.1f,  0.1f)},
@@ -207,12 +228,12 @@ int main(int argc, char *argv[])
     lightModelTrans.t = glm::vec3{0.5, 1.5, 0.5};
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    glEnable(GL_DEPTH_TEST);
+    if (showPrimitives) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (gldepthtest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    glDisable(GL_CULL_FACE);
+    if (glcull) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    glFrontFace(GL_CCW);
+    glFrontFace(GL_CW); // DE NORMAL ES CCW
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);   
     
@@ -355,6 +376,8 @@ int main(int argc, char *argv[])
         camera.updateMatrix(alpha);
         
         model.Draw(&shaderProgram, &camera, &modelTrans);
+        modelo0.Draw(&shaderProgram, &camera, modelTrans0);
+        modelo1.Draw(&shaderProgram, &camera, modelTrans1);
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
@@ -505,6 +528,15 @@ void resolveArgs(int argc, char* argv[])
             
             if(token.find("-wd") == 0)
                 working_dir = token.substr(3);
+
+            if(token.find("-glEnableCull") == 0)
+                glcull = true;
+
+            if(token.find("-glDisableDepthTest") == 0)
+                gldepthtest = false;
+
+            if(token.find("-glShowPrimitives") == 0)
+                showPrimitives = true;
         }
     } catch(const std::exception& e) {
         printf("[ERROR] while resolving arguments\n");

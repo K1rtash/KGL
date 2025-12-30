@@ -11,5 +11,3 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 * This proyect uses the (GLM library)[https://github.com/g-truc/glm], copyright (c) 2005 - G-Truc Creation
 
 * This proyect uses the (stb)[https://github.com/nothings/stb] header-only library, copyright (c) 2017 Sean Barrett
-
-* This proyect uses the (nlohmann/JSON)[https://json.nlohmann.me/] header-only library, copyright (c) 2013-2025 Niels Lohmann
