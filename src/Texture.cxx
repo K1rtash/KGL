@@ -3,19 +3,39 @@
 #include <iostream>
 #include <string>
 
-int Texture::resolveData(RawTexData* data) 
+RawTexData getDiscFileData(const char* file)
 {
+    RawTexData data{
+        .bytes = nullptr, 
+        .clrch = 0, 
+        .width = 0, 
+        .height = 0,
+    };
+
     stbi_set_flip_vertically_on_load(true);
-    data->bytes = stbi_load(data->file.c_str(), &(data->width), &(data->height), &(data->clrch), 0);
+    data.bytes = stbi_load(file, &(data.width), &(data.height), &(data.clrch), 0);
+    
+    printf("[INFO] Loading texture from disc '%s' (%ix%i %i-ch)\n", file, data.width, data.height, data.clrch);
 
-    std::cout << "[INFO] Loading texture from disc '" << data->file << "' (" << data->width << "x" << data->height << ") colorch: " << data->clrch << std::endl;
-    if(data->clrch > 4) data->clrch = 4;
-
-    return (data->bytes != nullptr);
+    return data;
 }
 
-Texture::Texture(RawTexData* data, GLuint slot, TextureType type) : type{type}, unit{slot} 
+RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colorCh)
 {
+    RawTexData data{
+        .bytes = bytes, 
+        .clrch = colorCh, 
+        .width = width, 
+        .height = height, 
+    };
+    
+    return data;
+}
+
+Texture::Texture(RawTexData data, GLuint slot, TextureType type) : type{type}, unit{slot} 
+{
+    if (data.bytes == nullptr) throw std::runtime_error("null ptr to texture byte data (tex slot: " + std::to_string(slot) + ")");
+
     glGenTextures(1, &id);
     Bind();
 
@@ -27,22 +47,22 @@ Texture::Texture(RawTexData* data, GLuint slot, TextureType type) : type{type}, 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    if (data->clrch >= 4) 
+    if (data.clrch >= 4) 
         format = GL_RGBA;
     else 
     {
-        switch ( data->clrch ) {
+        switch ( data.clrch ) {
             case 3: format = GL_RGB; break;
             case 2: format = GL_RG; break;
             case 1: format = GL_RED; break;
-            default: throw std::runtime_error("invalid texture channel number: " + std::to_string(data->clrch));
+            default: throw std::runtime_error("invalid texture channel number: " + std::to_string(data.clrch));
         }
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data->width, data->height, 0, format, GL_UNSIGNED_BYTE, data->bytes); // Assigns the image to the OpenGL Texture object
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, data.width, data.height, 0, format, GL_UNSIGNED_BYTE, data.bytes); // Assigns the image to the OpenGL Texture object
     glGenerateMipmap(GL_TEXTURE_2D); // Generates MipMaps
 
-    stbi_image_free(data->bytes);
+    stbi_image_free(data.bytes);
     Unbind();
 }
 

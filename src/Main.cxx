@@ -145,20 +145,17 @@ int main(int argc, char *argv[])
         0, 2, 3
     };
 
-    RawTexData td0, td1;
-    td0.file = relativeDir("textures/planks.png").c_str();    
-    td1.file = relativeDir("textures/planksSpec.png").c_str();
 
-    if ( !Texture::resolveData(&td0) || !Texture::resolveData(&td1) ) 
-    {
-        printf("[ERROR] Texture data cant be resolved");
-        return 1;
-    }
+    RawTexData texd1;
+    int dw, dh, clrch;
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* bytes = stbi_load(relativeDir("textures/planksSpec.png").c_str(), &dw, &dh, &clrch, 0);
+    texd1 = getEmbeddedData(bytes, dw, dh, clrch);
 
     Texture textures[]
 	{
-		Texture(&td0, 0, TextureType::DIFFUSE),
-		Texture(&td1, 1, TextureType::SPECULAR)
+		Texture(getDiscFileData(relativeDir("textures/planks.png").c_str()), 0, TextureType::DIFFUSE),
+		Texture(texd1, 1, TextureType::SPECULAR)
 	};
 
     std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
@@ -219,7 +216,8 @@ int main(int argc, char *argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);   
     
-    const double FIXED_TIMESTEP = 1.0 / 60.0;
+    const int TARGET_TPS = 60;
+    const double FIXED_TIMESTEP = 1.0 / (double)TARGET_TPS;
     const unsigned int MAX_STEPS = 5;
     double prevTime = glfwGetTime();
     double currentTime = 0.0;
@@ -372,7 +370,7 @@ int main(int argc, char *argv[])
         contador_ms += deltaTime;
         if(contador_ms >= 1.0) {
             std::cout << "[DEBUG] in " << contador_ms << "s " << contador_ticks << " ticks and " << contador_frames << " frames were processed" << std::endl; 
-            if( contador_lag > FIXED_TIMESTEP ) 
+            if( contador_ticks < TARGET_TPS ) 
             {
                 double msBehind = contador_lag * 1000.0;
                 int ticksBehind = (int)(contador_lag / FIXED_TIMESTEP);
