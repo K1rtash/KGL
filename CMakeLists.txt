@@ -3,11 +3,11 @@ project(opengl)
 
 set(CMAKE_CXX_STANDARD 23)
 
-set(GLAD_DIR "C:/DEV/SDK/Headers/glad")
-set(GLFW_DIR "C:/DEV/SDK/Static/GLFW")
-set(GLM_DIR "C:/DEV/SDK/Headers/glm")
-set(JSON_DIR "C:/DEV/SDK/Headers/nlohmann_json")
-set(ASSIMP_DIR "C:/DEV/SDK/Static/Assimp")
+set(GLAD_DIR "" CACHE PATH "Path to GLAD")
+set(GLFW_DIR "" CACHE PATH "Path to GLFW")
+set(GLM_DIR  "" CACHE PATH "Path to GLM")
+set(JSON_DIR "" CACHE PATH "Path to nlohmann_json")
+set(ASSIMP_DIR "" CACHE PATH "Path to Assimp")
 
 # Esto es lo único que necesitas para que funcione find_package
 list(APPEND CMAKE_PREFIX_PATH ${GLFW_DIR})
@@ -21,7 +21,6 @@ include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${GLAD_DIR}/include 
     ${GLM_DIR}/include 
-    ${JSON_DIR}/include
 )
 
 #link_directories(
@@ -42,6 +41,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     assimp::assimp
 )
+
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
 #file(COPY ${CMAKE_SOURCE_DIR}/shaders
 #     DESTINATION ${CMAKE_SOURCE_DIR})

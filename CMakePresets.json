@@ -1,0 +1,49 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+        "name": "base",
+        "hidden": true,
+        "generator": "Ninja",
+        "binaryDir": "build",
+        "cacheVariables": {
+            "CMAKE_CXX_COMPILER": "C:/DEV/mingw64/bin/g++.exe"
+        }
+    },
+
+    {
+        "name": "release",
+        "displayName": "Release",
+        "hidden": true,
+        "description": "Para versiones finales, trata warnings como errores y optimiza",
+        "inherits": ["base"],
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Release",
+            "CMAKE_CXX_FLAGS": "-O3 -Werror"
+        }
+    },
+
+    {
+        "name": "debug",
+        "displayName": "Debug",
+        "hidden": true,
+        "description": "Debug optimizado con todos los warnings",
+        "inherits": ["base"],
+        "cacheVariables": {
+            "CMAKE_BUILD_TYPE": "Debug",
+            "CMAKE_CXX_FLAGS": "-Wall -g -Wextra -Wfatal-errors -Wshadow -pedantic -Wconversion -Wsign-conversion -O2 -fmax-errors=3"
+        }
+    }
+  ],
+
+  "buildPresets": [
+    {
+        "name": "release",
+        "configurePreset": "release"
+    },
+    {
+        "name": "debug",
+        "configurePreset": "debug"
+    }
+  ]
+}

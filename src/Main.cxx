@@ -20,6 +20,7 @@ enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_B
 
 int delay_s = 0;
 volatile int should_exit = 0;
+std::string working_dir;
 
 struct KGL_WindowConfig 
 {
@@ -55,7 +56,12 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 void resolveArgs(int argc, char* argv[]);
 
 void handle_sigint(int) {
-    should_exit = 0;
+    should_exit = 1;
+}
+
+std::string relativeDir(const char* relative)
+{
+    return working_dir + "/" + relative;
 }
 
 int main(int argc, char *argv[]) 
@@ -120,8 +126,8 @@ int main(int argc, char *argv[])
 
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
         
-    Shader shaderProgram{"../shaders/vert.glsl", "../shaders/frag.glsl"};
-    Shader lightShaderProgram{"../shaders/light/vert.glsl", "../shaders/light/frag.glsl"};
+    Shader shaderProgram{relativeDir("shaders/vert.glsl").c_str(), relativeDir("shaders/frag.glsl").c_str()};
+    Shader lightShaderProgram{relativeDir("shaders/light/vert.glsl").c_str(), relativeDir("shaders/light/frag.glsl").c_str()};
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
 
     Vertex vertices[] =
@@ -140,8 +146,8 @@ int main(int argc, char *argv[])
     };
 
     RawTexData td0, td1;
-    td0.file = "../textures/planks.png";    
-    td1.file = "../textures/planksSpec.png";
+    td0.file = relativeDir("textures/planks.png").c_str();    
+    td1.file = relativeDir("textures/planksSpec.png").c_str();
 
     if ( !Texture::resolveData(&td0) || !Texture::resolveData(&td1) ) 
     {
@@ -251,7 +257,6 @@ int main(int argc, char *argv[])
 
         while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) 
         {
-            double tickTime_prev = glfwGetTime();
             updateKeyboard(window);
 
             auto keyDown = [](KGL_KeyState key) -> bool {return (key == KGL_KeyState::Press || key == KGL_KeyState::Hold); };
@@ -382,6 +387,7 @@ int main(int argc, char *argv[])
     shaderProgram.Delete();
     glfwDestroyWindow(window);
     glfwTerminate();
+    printf("\nProgram exited succesfully\n");
     return 0;
 }
     
@@ -503,6 +509,9 @@ void resolveArgs(int argc, char* argv[])
 
             if(token.find("-D") == 0)
                 delay_s = std::stoi(token.substr(2, 3));
+            
+            if(token.find("-wd") == 0)
+                working_dir = token.substr(3);
         }
     } catch(const std::exception& e) {
         printf("[ERROR] while resolving arguments\n");
