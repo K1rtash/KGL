@@ -216,17 +216,15 @@ int main(int argc, char *argv[])
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);   
     
-    const int TARGET_TPS = 60;
-    const double FIXED_TIMESTEP = 1.0 / (double)TARGET_TPS;
-    const unsigned int MAX_STEPS = 5;
-    double prevTime = glfwGetTime();
-    double currentTime = 0.0;
-    double accumulator = 0.0;
+    const int TARGET_TPS = 60; /// Objetivo de ticks por segundo
+    const double FIXED_TICK_TIME = 1.0 / (double)TARGET_TPS; /// Tiempo que debe durar cada tick (ms)
+    const unsigned int MAX_STEPS = 5; /// Maximo de ticks por frame
     float h = 0, s = 0.0, v = 1.0;
-    double contador_ms = 0;
-    int contador_ticks = 0;
-    int contador_frames = 0;
-    double contador_lag = 0.0;
+    double contador_ms = 0; /// contador de ms constante (telemetria)
+    int contador_ticks = 0; /// contador de ticks constante (telemetria)
+    int contador_frames = 0; /// contador de frames constante (telemetria)
+    float accumulator = 0.0f; /// Acumulador de tiempo
+    double prevTime = 0.0; /// Tiempo en el instante anterior preciso
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     while(!glfwWindowShouldClose(window) && !should_exit) 
     {
@@ -237,12 +235,12 @@ int main(int argc, char *argv[])
             continue;
         }
 
-        currentTime = glfwGetTime();
-        double deltaTime = currentTime - prevTime;
-        unsigned int steps = 0;
+        double currentTime = glfwGetTime(); /// Tiempo en este instante preciso
+        double deltaTime = currentTime - prevTime; /// Tiempo que ha tardado esta instancia del bucle
         prevTime = currentTime;
-        accumulator += deltaTime;
-        contador_lag += deltaTime;
+
+        accumulator += deltaTime; // Se añade el tiempo que ha tardado este frame al acumulador
+        int steps = 0; /// Ticks seguidos que se han ejecutado en una instancia del bucle
 
         float mouseDX = mouseState.dx;
         float mouseDY = mouseState.dy;
@@ -253,7 +251,8 @@ int main(int argc, char *argv[])
             camera.updateScroll(mouseScroll);
         }
 
-        while ( accumulator >= FIXED_TIMESTEP && steps < MAX_STEPS ) 
+        while ( accumulator >= FIXED_TICK_TIME && steps <= MAX_STEPS ) 
+        // Si hay suficiente tiempo acumulado como para ejecutar un Tick segun el objetivo de TPS y no se pasa el limite de Ticks en una instancia del bucle
         {
             updateKeyboard(window);
 
@@ -314,7 +313,7 @@ int main(int argc, char *argv[])
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
             }
 
-            camera.updateFixedInput(window, FIXED_TIMESTEP);
+            camera.updateFixedInput(window, FIXED_TICK_TIME);
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
@@ -338,25 +337,20 @@ int main(int argc, char *argv[])
             //rot_modelo = glm::normalize(nueva_rot);
             modelTrans.r = rot_modelo;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_s));
+            std::this_thread::sleep_for(std::chrono::milliseconds(delay_s)); // TEMPORAL, PARA RETRASAR EL JUEGO ARTIFICIALMENTE
 
-            accumulator -= FIXED_TIMESTEP;
-            steps++;
+            accumulator -= FIXED_TICK_TIME; // Se resta al tiempo acumulado el tiempo que dura un Tick
+            steps++; // Acumulamos un Tick seguido en esta instancia del bucle
             contador_ticks++;
-
-            contador_lag -= FIXED_TIMESTEP;
         }        
 
-        if (steps == MAX_STEPS) {
-            accumulator = 0.0;
-            contador_lag = 0.0;
-        }
+        if (steps == MAX_STEPS) accumulator = 0.0; // Se ha superado el máximo de Ticks en una instancia del bucle
 
         resetMouseState(mouseState);
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
                 
-        double alpha = glm::clamp((accumulator / FIXED_TIMESTEP), 0.0, 1.0);  
+        double alpha = glm::clamp((accumulator / FIXED_TICK_TIME), 0.0, 1.0); /// Valor que se usa para interpolacion suave 
 
         camera.updateMatrix(alpha);
         
@@ -365,18 +359,19 @@ int main(int argc, char *argv[])
         
         glfwSwapBuffers(window);
 
-
+        // Apartado de telemetría
         contador_frames++;
         contador_ms += deltaTime;
         if(contador_ms >= 1.0) {
             std::cout << "[DEBUG] in " << contador_ms << "s " << contador_ticks << " ticks and " << contador_frames << " frames were processed" << std::endl; 
             if( contador_ticks < TARGET_TPS ) 
+            // No se ha llegado al objetivo de TPS
             {
-                double msBehind = contador_lag * 1000.0;
-                int ticksBehind = (int)(contador_lag / FIXED_TIMESTEP);
+                int ticksBehind = TARGET_TPS - contador_ticks;
+                double msBehind = (double)ticksBehind * (FIXED_TICK_TIME * 1000.0);
                 printf("[WARNING] Can't keep up! Is the server overloaded? Running %d ticks or %.2fms behind!\n", ticksBehind, msBehind);
             }
-            contador_ms = 0.0;
+            contador_ms = contador_ms - 1.0; // Ya que el contador de ms puede exceder un segundo muchas veces, le dejamos lo que sobra
             contador_frames = 0.0;
             contador_ticks = 0.0;
         }
@@ -385,7 +380,7 @@ int main(int argc, char *argv[])
     shaderProgram.Delete();
     glfwDestroyWindow(window);
     glfwTerminate();
-    printf("\nProgram exited succesfully\n");
+    printf("\n[INFO] Program exited succesfully\n");
     return 0;
 }
     
