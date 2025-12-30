@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
             camera.updateScroll(mouseScroll);
         }
 
-        while ( accumulator >= FIXED_TICK_TIME && steps <= MAX_STEPS ) 
+        while ( accumulator >= FIXED_TICK_TIME && steps < MAX_STEPS ) 
         // Si hay suficiente tiempo acumulado como para ejecutar un Tick segun el objetivo de TPS y no se pasa el limite de Ticks en una instancia del bucle
         {
             updateKeyboard(window);
