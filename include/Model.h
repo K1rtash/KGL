@@ -16,11 +16,12 @@ public:
 
 private:
     vector<Mesh> meshes;
+    vector<Texture> textures_loaded;
     std::string directory;
 
     void loadModel(std::string path);
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    //vector<Texture> loadMaterialTextures(aiMaterial *mat, aiTextureType type, std::string typeName);
+    vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType);
 };
 #endif

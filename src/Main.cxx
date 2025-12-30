@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
     modelTrans0.s = glm::vec3{10.0, 10.0, 10.0};
     modelTrans0.t = glm::vec3{1.0, 2.0, 1.0};
     
-    Model modelo1{relativeDir("models/statue/scene.gltf").c_str()};
+    Model modelo1{relativeDir("models/backpack/backpack.obj").c_str()};
     Transform modelTrans1;
     modelTrans1.r = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
     modelTrans1.s = glm::vec3{3.0, 3.0, 3.0};

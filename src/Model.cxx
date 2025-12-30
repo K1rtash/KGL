@@ -41,7 +41,7 @@ Vertex processMeshVertex(aiMesh* mesh, unsigned int i)
     return vertex; // Ya esta completa esta estructura de Vertex, la añadimos al vector que define este Mesh
 }
 
-vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType, std::string directory)
+vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType)
 {
     vector<Texture> textures;
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -49,9 +49,24 @@ vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureT
         aiString str; // nombre del archivo de la textura
         mat->GetTexture(type, i, &str);
 
-        std::string texPath = directory + '/' + str.C_Str(); // ruta absoluta a la textura
-        Texture texture{getDiscFileData(texPath.c_str()), i, texType}; // crea un objeto textura
-        textures.push_back(texture); // lo añade al vector de tipo de texturas
+        bool alreadyLoaded = false;
+        for(unsigned int j = 0; j < textures_loaded.size(); j++) // itera todas las texturas cargadas comprobando si el path de cada una es igual que el actual
+        {
+            if( std::strcmp(textures_loaded[j].path.data(), str.C_Str()) == 0 ) { // si coincide cargamos la actual y saltamos la carga normal
+                textures.push_back(textures_loaded[j]); 
+                alreadyLoaded = true;
+                break;
+            }
+        }
+
+        if(!alreadyLoaded) {
+            std::string texPath = directory + '/' + str.C_Str(); // ruta absoluta a la textura
+            Texture texture{getDiscFileData(texPath.c_str()), i, texType}; // crea un objeto textura
+            texture.path = str.C_Str();
+
+            textures.push_back(texture); // lo añade al vector de tipo de texturas
+            textures_loaded.push_back(texture); // la guarda para no tener que cargarla nuevamente
+        }
     }
     return textures;
 }
@@ -78,10 +93,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene *scene)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE, directory); // vector de texturas de tipo diffuse
+        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE); // vector de texturas de tipo diffuse
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // añade las texturas diffuse al vector principal
 
-        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, TextureType::SPECULAR, directory); // vector de texturas de tipo specular
+        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, TextureType::SPECULAR); // vector de texturas de tipo specular
         textures.insert(textures.end(), specMaps.begin(), specMaps.end()); // añade las texturas specular al vector principal
     }
 

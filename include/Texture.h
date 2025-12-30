@@ -44,7 +44,7 @@ public:
     GLenum format;
     GLuint id;
     GLuint unit;
-
+    std::string path;
     /**
      * @brief Creates a new GPU texture
      * 
