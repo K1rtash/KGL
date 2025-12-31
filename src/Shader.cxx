@@ -1,4 +1,6 @@
 #include "Shader.h"
+#include "Kirtash/stl.h"
+
 #include <stdexcept>
 #include <iostream>
 #include <format>
@@ -7,17 +9,17 @@
 
 using std::string, std::ifstream, std::stringstream, std::cerr, std::endl;
 
-std::string read_file_contents(const char* filepath) 
+std::string read_file_contents(std::string filepath) 
 {
     ifstream file(filepath);
 
-    if (!file.is_open()) throw std::runtime_error("unable to open source file '" + string(filepath) + "'");
-    if (file.fail() || file.bad()) throw std::runtime_error("cant read source file '" + string(filepath) + "'");
+    if (!file.is_open()) throw std::runtime_error("unable to open source file '" + filepath + "'");
+    if (file.fail() || file.bad()) throw std::runtime_error("cant read source file '" + filepath + "'");
 
     stringstream buffer;
     buffer << file.rdbuf();
 
-    if (buffer.str().empty()) throw std::runtime_error("source file is empty '" + string(filepath) + "'");
+    if (buffer.str().empty()) throw std::runtime_error("source file is empty '" + filepath + "'");
 
     return buffer.str();
 }
@@ -104,13 +106,13 @@ void Shader::linkShaders(GLuint vertex_shader, GLuint fragment_shader)
     glUseProgram(id);
 }
 
-Shader::Shader(const char* vertex_shader_path, const char* fragment_shader_path) : 
-    id{glCreateProgram()}, 
-    vertPath{vertex_shader_path}, 
-    fragPath{fragment_shader_path} 
+Shader::Shader(std::string vertex_shader_path, std::string fragment_shader_path) : id{glCreateProgram()} 
 {
+    vertPath = kirtash::normalizeString(vertex_shader_path);
+    fragPath = kirtash::normalizeString(fragment_shader_path);
+
     try {
-        std::cout << "[INFO] creating shader program with id: " << id << " vertex shader: '" << vertex_shader_path << "' fragment shader: '" << fragment_shader_path << "'" << std::endl;
+        std::cout << "[INFO] creating shader program with id: " << id << " vertex shader: '" << vertPath << "' fragment shader: '" << fragPath << "'" << std::endl;
         create();
     } catch (std::runtime_error& e) {
         std::cout << "[ERROR] while creating shader program: " << e.what() << std::endl;

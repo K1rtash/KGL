@@ -19,7 +19,8 @@
         "inherits": ["base"],
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Release",
-            "CMAKE_CXX_FLAGS": "-O3 -Werror"
+            "CMAKE_CXX_FLAGS": "-O3 -Werror",
+            "KGL_COPY_ASSETS": true
         }
     },
 

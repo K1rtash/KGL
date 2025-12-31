@@ -1,5 +1,5 @@
 build/
 .vscode/
-include/glm
-ejemplos/
-docs/
+docs/*
+assets/models/*
+assets/textures/*

@@ -1,15 +1,15 @@
 #include <iostream>
 #include <filesystem>
 
+#include <stb/stb_image.h>
+
 #include "Model.h"
 #include "Kirtash/stl.h"
 
-Model::Model(const char* file) 
+Model::Model(fs::path file) : source{file}
 {
-    std::string path = kirtash::normalizeString(file);
-    src_file = path.c_str();
-    printf("[INFO] Loading model: '%s'\n", src_file);
-    loadModel(path);
+    printf("[INFO] Loading model: '%s'\n", file.string().c_str());
+    loadModel(file.string());
 }
 
 void Model::Draw(Shader* shader, Camera* camera, Transform transform)
@@ -49,7 +49,7 @@ Vertex processMeshVertex(aiMesh* mesh, unsigned int i)
 
 std::string Model::resolveTexturePath(const std::string& tex)
 {
-    std::string modelPath = src_file;
+    std::string modelPath = source.string();
     // 1. Normalizar barras
     std::string t = tex;
     for (char& c : t) if (c == '\\') c = '/';
@@ -77,12 +77,49 @@ std::string Model::resolveTexturePath(const std::string& tex)
     if (fs::exists(alt2))
         return alt2.string();
 
-    printf("[ERROR] Texture for model '%s' not found!", src_file);
+    printf("[ERROR] Texture for model '%s' not found!", source.string().c_str());
     return tex;
 }
 
+RawTexData getEmbeddedAssimpTexture(const aiTexture* tex)
+{
+    if (tex->mHeight == 0) {
+        // Compressed
+        unsigned char* data = reinterpret_cast<unsigned char*>(tex->pcData);
+        int size = tex->mWidth;
 
-vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType)
+        int w, h, ch;
+        unsigned char* decoded = stbi_load_from_memory(data, size, &w, &h, &ch, 0);
+
+        return RawTexData{decoded, ch, w, h};
+    } 
+    else {
+        // RAW
+        int w = tex->mWidth;
+        int h = tex->mHeight;
+
+        unsigned char* pixels = new unsigned char[w * h * 4];
+
+        for (int i = 0; i < w * h; i++) {
+            pixels[i*4 + 0] = tex->pcData[i].r;
+            pixels[i*4 + 1] = tex->pcData[i].g;
+            pixels[i*4 + 2] = tex->pcData[i].b;
+            pixels[i*4 + 3] = tex->pcData[i].a;
+        }
+
+        //RawTexData data = getEmbeddedData(pixels, w, h, 4);
+        RawTexData data{
+            .bytes = pixels, 
+            .clrch = 4, 
+            .width = w, 
+            .height = h, 
+        };
+        return data;
+    }
+}
+
+
+vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType, const aiScene* scene)
 {
     vector<Texture> textures;
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -102,23 +139,39 @@ vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, T
 
         // Si la textura no esta ya en memoria, la cargamos y guardamos
         if(!alreadyLoaded)
-        {
-            //std::string texPath = directory + '/' + str.C_Str(); // ruta absoluta a la textura
-            
+        {            
             // Se obtiene el path de la textura y se crea el objeto
-            std::string texPath = resolveTexturePath(str.C_Str());
-            Texture texture{getDiscFileData(texPath.c_str()), i, texType};
+            /*std::string texPath = resolveTexturePath(str.C_Str());
+            Texture texture{getDiscFileData(texPath.c_str()), i, texType};*/
+
+            if (str.C_Str()[0] == '*') // textura embebida
+            {
+                const aiTexture* tex = scene->GetEmbeddedTexture(str.C_Str());
+                RawTexData data = getEmbeddedAssimpTexture(tex);
+                Texture texture{data, i, texType};
+
+                texture.path = str.C_Str();
+                textures.push_back(texture);
+                textures_loaded.push_back(texture);
+            }
+            else // textura en disco
+            {
+                std::string texPath = resolveTexturePath(str.C_Str());
+                Texture texture{getDiscFileData(texPath.c_str()), i, texType};
+                            
+                texture.path = str.C_Str();
+                textures.push_back(texture);
+                textures_loaded.push_back(texture);
+            }
 
             // Guardamos el path de la textura manualmente y se añade a vectores
-            texture.path = str.C_Str();
-            textures.push_back(texture);
-            textures_loaded.push_back(texture);
+
         }
     }
     return textures;
 }
 
-Mesh Model::processMesh(aiMesh* mesh, const aiScene *scene)
+Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
 {
     vector<Vertex> vertices;
     vector<GLuint> indices;
@@ -140,28 +193,45 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene *scene)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE); // vector de texturas de tipo diffuse
+        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE, scene); // vector de texturas de tipo diffuse
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // añade las texturas diffuse al vector principal
 
-        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, TextureType::SPECULAR); // vector de texturas de tipo specular
+        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, TextureType::SPECULAR, scene); // vector de texturas de tipo specular
         textures.insert(textures.end(), specMaps.begin(), specMaps.end()); // añade las texturas specular al vector principal
     }
 
     return Mesh{vertices, indices, textures};
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene)
+glm::mat4 processMat4(const aiMatrix4x4& m)
 {
+    glm::mat4 out;
+
+    out[0][0] = m.a1; out[1][0] = m.a2; out[2][0] = m.a3; out[3][0] = m.a4;
+    out[0][1] = m.b1; out[1][1] = m.b2; out[2][1] = m.b3; out[3][1] = m.b4;
+    out[0][2] = m.c1; out[1][2] = m.c2; out[2][2] = m.c3; out[3][2] = m.c4;
+    out[0][3] = m.d1; out[1][3] = m.d2; out[2][3] = m.d3; out[3][3] = m.d4;
+
+    return out;
+}
+
+void Model::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform)
+{
+    glm::mat4 nodeTransform = processMat4(node->mTransformation);
+    glm::mat4 globalTransform = parentTransform * nodeTransform;
+
     for(unsigned int i = 0; i < node->mNumMeshes; i++)
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; 
-        Mesh processed_mesh = processMesh(mesh, scene);
+        Mesh processed_mesh = processMesh(mesh, scene); // transforma el mesh de assimp al formato mio
+        processed_mesh.local_trans = globalTransform; // añade la transformación del nodo
+
         meshes.push_back(processed_mesh);			
     }
     // Funcion recursiva en todos los nodos hijos del nodo actual
     for(unsigned int i = 0; i < node->mNumChildren; i++)
     {
-        processNode(node->mChildren[i], scene);
+        processNode(node->mChildren[i], scene, globalTransform);
     }
 }
 
@@ -176,7 +246,5 @@ void Model::loadModel(std::string path)
         return;
     }
 
-    directory = path.substr(0, path.find_last_of('/'));
-
-    processNode(scene->mRootNode, scene);
+    processNode(scene->mRootNode, scene, glm::mat4(1.0f)); // se procesa con una matrix inicial de identidad (1.0f)
 }

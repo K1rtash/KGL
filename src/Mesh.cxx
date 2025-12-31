@@ -2,7 +2,8 @@
 
 #include "glm/gtc/type_ptr.hpp"
 
-Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures) : vertices{vertices}, indices{indices}, textures{textures}
+Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 transform) 
+	: vertices{vertices}, indices{indices}, textures{textures}, local_trans{transform}
 {
     vao.Bind();
     VBO vbo{&vertices};
@@ -46,14 +47,15 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* transform)
 	glUniform3fv(shader->GetUniformLoc("camPos"), 1, glm::value_ptr(camera->getTransform()->pos));
 	glUniformMatrix4fv(shader->GetUniformLoc("camMat"), 1, GL_FALSE, glm::value_ptr(*(camera->getMatrix())));
 
-	glm::mat4 model = glm::mat4(1.0f);
+	glm::mat4 global = glm::mat4{1.0f}; // la matrix final se inicializa a la transformacion local de esta mesh en su modelo
 
-	model = glm::translate(model, transform->t);
-	model *= glm::mat4_cast(transform->r);
-	model = glm::scale(model, transform->s);
+	global = glm::translate(global, transform->t);
+	global *= glm::mat4_cast(transform->r);
+	global = glm::scale(global, transform->s);
+	global *= local_trans;
 
 	// Push the matrices to the vertex shader
-	glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(model));
+	glUniformMatrix4fv(shader->GetUniformLoc("model"), 1, GL_FALSE, glm::value_ptr(global));
 
 	// Draw the actual mesh
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

@@ -6,24 +6,26 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 class Model
 {
 public:
 	// Loads in a model from a file and stores tha information in 'data', 'JSON', and 'file'
-	Model(const char* file);
+	Model(fs::path file);
  
 	void Draw(Shader* shader, Camera* camera, Transform transform);
 
 private:
     vector<Mesh> meshes;
     vector<Texture> textures_loaded;
-    std::string directory;
-    const char* src_file; // .gltf o .obj path ABSOLUTO
+    fs::path source;
 
     void loadModel(std::string path);
-    void processNode(aiNode* node, const aiScene* scene);
+    void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType);
+    vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType, const aiScene* scene);
     std::string resolveTexturePath(const std::string& tex);
 };
 #endif

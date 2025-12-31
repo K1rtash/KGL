@@ -15,19 +15,31 @@
 #include <string>
 #include <thread>
 #include <csignal>
+#include <cstdlib> // Para rand() y srand()
+#include <ctime>   // Para time()
+#include <filesystem>
+#include <windows.h>
 
-enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
+namespace fs = std::filesystem;
+
+enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED};
+enum class KGL_RelativeDir {SHADERS, MODELS, ASSETS, TEXTURES, BIN, WORKING_DIRECTORY};
 
 struct KGL_RuntimeOpt
 {
     int frameDelay = 0;
+    int gl_frontFace = 0;
     bool gl_cullFace = false;
     bool gl_depthTest = true;
     bool gl_poligonMode = false;
-    int gl_frontFace = 0;
-    std::string model_path;
-    std::string asset_dir;
+    bool useWorkingDir = false;    
+    std::string use_model;
 } runtimeOpt;
+
+struct KGL_Paths
+{
+    fs::path bin, wd;
+} paths;
 
 volatile int should_exit = 0;
 
@@ -63,20 +75,34 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 void setLogicalPresentation(int width, int height, const float LOGICAL_ASPECT);
 void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 void resolveArgs(int argc, char* argv[]);
+void resolveDirectoryPaths();
+std::string getAbsolutePath(std::string relative, KGL_RelativeDir base);
+
 
 void handle_sigint(int) {
     should_exit = 1;
 }
 
-std::string relativeDir(const char* relative)
-{
-    return runtimeOpt.asset_dir + "/" + relative;
+Transform nuevoCoche(glm::vec3 pos)
+{ //int n = rand() % (max - min + 1) + min;
+    //double x = min + (double)(rand() / RAND_MAX) * (max - min);
+    double s = 0.1 + rand() / (double)RAND_MAX * (2.0 - 0.1); 
+    int r = rand() % (270 - 0 + 1) + 0;
+
+    Transform modelt1;
+    modelt1.t = glm::vec3{pos.x, pos.y, pos.z};
+    modelt1.s = glm::vec3{1.0 + s, 1.0 + s, 1.0 + s};
+    modelt1.r = glm::quat{glm::angleAxis(glm::radians((float)r), glm::vec3{0.0, 1.0, 0.0})};
+    return modelt1;
 }
 
 int main(int argc, char *argv[]) 
 {
+    srand(time(NULL)); 
     std::signal(SIGINT, handle_sigint);
+
     if(argc != 0) resolveArgs(argc, argv);
+    resolveDirectoryPaths();
 
     glfwInit();
 
@@ -138,12 +164,12 @@ int main(int argc, char *argv[])
 
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
         
-    Shader shaderProgram{relativeDir("shaders/vert.glsl").c_str(), relativeDir("shaders/frag.glsl").c_str()};
-    Shader lightShaderProgram{relativeDir("shaders/light/vert.glsl").c_str(), relativeDir("shaders/light/frag.glsl").c_str()};
+    Shader shaderProgram{getAbsolutePath("vert.glsl", KGL_RelativeDir::SHADERS), getAbsolutePath("frag.glsl", KGL_RelativeDir::SHADERS)};
+    Shader lightShaderProgram{getAbsolutePath("light/vert.glsl", KGL_RelativeDir::SHADERS), getAbsolutePath("light/frag.glsl", KGL_RelativeDir::SHADERS)};
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
 
 
-    Model model{relativeDir(runtimeOpt.model_path.c_str()).c_str()};    
+    Model model{getAbsolutePath(runtimeOpt.use_model, KGL_RelativeDir::MODELS)};    
     glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
     Transform modelTrans;
     modelTrans.r = rot_modelo;
@@ -188,6 +214,8 @@ int main(int argc, char *argv[])
     lightModelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
     lightModelTrans.t = glm::vec3{0.5, 1.5, 0.5};
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
+
+    std::vector<Transform> coches;
 
     if(runtimeOpt.gl_poligonMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if(runtimeOpt.gl_depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
@@ -291,6 +319,12 @@ int main(int argc, char *argv[])
                 camera.setViewport(45.0f, 0.1f, 100.0f);
             }
             
+            if(getKey(GLFW_KEY_2) == KGL_KeyState::Press)
+                coches.push_back(nuevoCoche(camera.getTransform()->pos));
+
+            if(getKey(GLFW_KEY_3) == KGL_KeyState::Press)
+                coches.clear();
+
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
                 mouseState.captured = 1;
                 glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -317,7 +351,7 @@ int main(int argc, char *argv[])
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
-            rot_modelo = glm::normalize(nueva_rot);
+            //rot_modelo = glm::normalize(nueva_rot);
             modelTrans.r = rot_modelo;
 
             std::this_thread::sleep_for(std::chrono::milliseconds(runtimeOpt.frameDelay)); // TEMPORAL, PARA RETRASAR EL JUEGO ARTIFICIALMENTE
@@ -337,7 +371,18 @@ int main(int argc, char *argv[])
 
         camera.updateMatrix(alpha);
         
-        model.Draw(&shaderProgram, &camera, modelTrans);
+        for(int i = 0; i < coches.size(); i++) {
+            Transform trans = coches[i];
+            double r0 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
+            double r1 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
+            double r2 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
+            glm::vec3 axis(r0, r1, r2);
+            glm::normalize(axis);
+            float angle = glm::radians((float)sin(deltaTime * 1000.0));
+            trans.r = glm::quat{glm::angleAxis(angle, axis)};
+            model.Draw(&shaderProgram, &camera, trans);
+        }
+
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
@@ -468,25 +513,25 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
 
 void setArgVal(const std::string& name, int value)
 {
-    if(name == "msaaSamples") windowConfig.msaa = value;
-    if(name == "windowMode")  windowConfig.windowMode = value;
-    if(name == "frameDelay")  runtimeOpt.frameDelay = value;
-    if(name == "glFrontFace") runtimeOpt.gl_frontFace = value;
+    if(name == "msaaSamples")   windowConfig.msaa = value;
+    if(name == "windowMode")    windowConfig.windowMode = value;
+    if(name == "frameDelay")    runtimeOpt.frameDelay = value;
+    if(name == "glFrontFace")   runtimeOpt.gl_frontFace = value;
 }
 
 void setArgVal(const std::string& name, bool value)
 {
-    if(name == "enableVsync")      windowConfig.vsync = value;
-    if(name == "glEnableCull")     runtimeOpt.gl_cullFace = value;
-    if(name == "glEnableDepthTest")runtimeOpt.gl_depthTest = value;
-    if(name == "glPoligonMode")    runtimeOpt.gl_poligonMode = value;
+    if(name == "enableVsync")           windowConfig.vsync = value;
+    if(name == "glEnableCull")          runtimeOpt.gl_cullFace = value;
+    if(name == "glEnableDepthTest")     runtimeOpt.gl_depthTest = value;
+    if(name == "glPoligonMode")         runtimeOpt.gl_poligonMode = value;
+    if(name == "overrideWD")            runtimeOpt.useWorkingDir = value;
 }
 
 void setArgVal(const std::string& name, const std::string& value)
 {
     if(name == "help") printf("[CMD ARGS OPTIONS] -> (bool)enableVsync, (int)msaaSamples, (int)windowMode, (int)frameDelay, (string)workingDir, (bool)glEnableCull (glEnableDepthTest), (bool)glPoligonMode, (int)glFrontFace");
-    if(name == "workingDir") runtimeOpt.asset_dir = value;
-    if(name == "modelPath") runtimeOpt.model_path = "models/" + value;
+    if(name == "model") runtimeOpt.use_model = kirtash::normalizeString(value);
 }
 
 void resolveArgs(int argc, char* argv[])
@@ -515,4 +560,29 @@ void resolveArgs(int argc, char* argv[])
             setArgVal(name, true);
         }
     }
+}
+
+void resolveDirectoryPaths() 
+{
+    char buffer[MAX_PATH];
+    GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+    fs::path base = fs::path(buffer).parent_path();
+
+    paths.bin = base;
+    paths.wd = fs::current_path();
+}
+
+std::string getAbsolutePath(std::string relative, KGL_RelativeDir base)
+{
+    fs::path abs, root = runtimeOpt.useWorkingDir ? paths.wd : paths.bin;
+
+    switch(base) {
+        case KGL_RelativeDir::BIN: abs = root; break;
+        case KGL_RelativeDir::ASSETS: abs = root / "assets"; break;
+        case KGL_RelativeDir::MODELS: abs = root / "assets" / "models"; break;
+        case KGL_RelativeDir::SHADERS: abs = root / "assets" / "shaders"; break;
+        case KGL_RelativeDir::TEXTURES: abs = root /"assets" / "textures"; break;
+    }
+
+    return (abs / relative).string();
 }

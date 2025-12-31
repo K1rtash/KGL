@@ -14,8 +14,8 @@ std::string read_file_contents(const char* filepath);
 
 class Shader 
 {
-    const char* vertPath;
-    const char* fragPath;
+    std::string vertPath;
+    std::string fragPath;
     std::unordered_map<std::string, int>uniformLocations;
     void linkShaders(GLuint vertex_shader, GLuint fragment_shader);
     void create();
@@ -27,7 +27,7 @@ public:
      * @param fragment_shader_path Source file in GLSL
      * @warning Errors in the shaders will throw std::runtime_error
      */
-    Shader(const char* vertex_shader_path, const char* fragment_shader_path);
+    Shader(std::string vertex_shader_path, std::string fragment_shader_path);
     /**
      * @brief Get the memory address of a uniform in the current shader program
      * @param name Uniform name

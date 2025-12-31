@@ -11,4 +11,4 @@
 #(str) workingDir
 #(str) modelPath
 
-.\build\opengl --workingDir "C:\Users\David\Desktop\Programacion\C++\Proyectos\opengl" --modelPath "cubo\scene.gltf" --glEnableCull --glFrontFace 0
+.\build\opengl --modelPath "low-poly-truck\source\model.gltf" --glEnableCull --glFrontFace 0

@@ -2,6 +2,7 @@
 #define MESH_CLASS
 
 #include <vector>
+#include <glm/glm.hpp>
 
 #include "VAO.h"
 #include "EBO.h"
@@ -25,10 +26,11 @@ public:
     vector<Vertex> vertices;
     vector<GLuint> indices;
     vector<Texture> textures;
+    glm::mat4 local_trans;
 
     VAO vao;
 
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures);
+    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 local_trans = glm::mat4{1.0f});
     void Draw
 	(
 		Shader* shader, 
