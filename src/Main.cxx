@@ -8,6 +8,7 @@
 #include "Model.h"
 #include "Mesh.h"
 #include "Input.h"
+#include "Kirtash/stl.h"
 
 #include <iostream>
 #include <algorithm>
@@ -17,13 +18,18 @@
 
 enum KGLenum {WINDOWMODE_RESIZABLE, WINDOWMODE_FULLSCREEN, WINDOWMODE_WINDOWED_BORDERLESS, WINDOWMODE_WINDOWED, CURSOR_FREE, CURSOR_DISABLED, CURSOR_LOCKED};
 
+struct KGL_RuntimeOpt
+{
+    int frameDelay = 0;
+    bool gl_cullFace = false;
+    bool gl_depthTest = true;
+    bool gl_poligonMode = false;
+    int gl_frontFace = 0;
+    std::string model_path;
+    std::string asset_dir;
+} runtimeOpt;
 
-int delay_s = 0;
-bool glcull = false;
-bool gldepthtest = true;
-bool showPrimitives = false;
 volatile int should_exit = 0;
-std::string working_dir;
 
 struct KGL_WindowConfig 
 {
@@ -64,13 +70,13 @@ void handle_sigint(int) {
 
 std::string relativeDir(const char* relative)
 {
-    return working_dir + "/" + relative;
+    return runtimeOpt.asset_dir + "/" + relative;
 }
 
 int main(int argc, char *argv[]) 
 {
     std::signal(SIGINT, handle_sigint);
-    resolveArgs(argc, argv);
+    if(argc != 0) resolveArgs(argc, argv);
 
     glfwInit();
 
@@ -136,59 +142,13 @@ int main(int argc, char *argv[])
     Shader lightShaderProgram{relativeDir("shaders/light/vert.glsl").c_str(), relativeDir("shaders/light/frag.glsl").c_str()};
     Camera camera{windowConfig.LOGICAL_WIDTH, windowConfig.LOGICAL_HEIGHT, glm::vec3(0.0f, 0.0f, 1.0f)};
 
-    Vertex vertices[] =
-    { //               COORDINATES           /            COLORS          /           NORMALS         /       TEXTURE COORDINATES    //
-        Vertex{glm::vec3(-1.0f, 0.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 0.0f)},
-        Vertex{glm::vec3(-1.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(0.0f, 1.0f)},
-        Vertex{glm::vec3( 1.0f, 0.0f, -1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 1.0f)},
-        Vertex{glm::vec3( 1.0f, 0.0f,  1.0f), glm::vec3(1.0f, 1.0f, 1.0f), glm::vec2(1.0f, 0.0f)}
-    };
 
-    // Indices for vertices order
-    GLuint indices[] =
-    {
-        0, 1, 2,
-        0, 2, 3
-    };
-
-
-    RawTexData texd1;
-    int dw, dh, clrch;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char* bytes = stbi_load(relativeDir("textures/planksSpec.png").c_str(), &dw, &dh, &clrch, 0);
-    texd1 = getEmbeddedData(bytes, dw, dh, clrch);
-
-    Texture textures[]
-	{
-		Texture(getDiscFileData(relativeDir("textures/planks.png").c_str()), 0, TextureType::DIFFUSE),
-		Texture(texd1, 1, TextureType::SPECULAR)
-	};
-
-    std::vector <Vertex> verts(vertices, vertices + sizeof(vertices) / sizeof(Vertex));
-	std::vector <GLuint> ind(indices, indices + sizeof(indices) / sizeof(GLuint));
-    std::vector <Texture> tex(textures, textures + sizeof(textures) / sizeof(Texture));
-
-    Mesh model{verts, ind, tex};    
-    glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
+    Model model{relativeDir(runtimeOpt.model_path.c_str()).c_str()};    
+    glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
     Transform modelTrans;
     modelTrans.r = rot_modelo;
     modelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
     modelTrans.t = glm::vec3{1.0, 1.0, 1.0};
-
-    Model modelo0{relativeDir("models/bunny/scene.gltf").c_str()};
-    Transform modelTrans0;
-    modelTrans0.r = glm::quat{glm::angleAxis(glm::radians(90.0f), glm::vec3(0,0,1))};
-    // Para rotar un quat se crea un nuevo quat y se multiplican, luego se normaliza
-    modelTrans0.r *= glm::quat{glm::angleAxis(glm::radians(-90.0f), glm::vec3(0,1,0))};
-    modelTrans0.r = glm::normalize(modelTrans0.r);
-    modelTrans0.s = glm::vec3{10.0, 10.0, 10.0};
-    modelTrans0.t = glm::vec3{1.0, 2.0, 1.0};
-    
-    Model modelo1{relativeDir("models/backpack/backpack.obj").c_str()};
-    Transform modelTrans1;
-    modelTrans1.r = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
-    modelTrans1.s = glm::vec3{3.0, 3.0, 3.0};
-    modelTrans1.t = glm::vec3{1.0, 5.0, 1.0};
 
     Vertex lightVertices[] =
     { //     COORDINATES     //
@@ -221,6 +181,7 @@ int main(int argc, char *argv[])
     std::vector <Vertex> Lverts(lightVertices, lightVertices + sizeof(lightVertices) / sizeof(Vertex));
 	std::vector <GLuint> Lind(lightIndices, lightIndices + sizeof(lightIndices) / sizeof(GLuint));
 
+    std::vector<Texture> tex;
     Mesh lightModel{Lverts, Lind, tex};    
     Transform lightModelTrans;
     lightModelTrans.r = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
@@ -228,12 +189,12 @@ int main(int argc, char *argv[])
     lightModelTrans.t = glm::vec3{0.5, 1.5, 0.5};
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (showPrimitives) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    if (gldepthtest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if(runtimeOpt.gl_poligonMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if(runtimeOpt.gl_depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
+    if(runtimeOpt.gl_cullFace) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     glDepthFunc(GL_LESS);
-    if (glcull) glEnable(GL_CULL_FACE); else glDisable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
-    glFrontFace(GL_CW); // DE NORMAL ES CCW
+    runtimeOpt.gl_frontFace ? glFrontFace(GL_CCW) : glFrontFace(GL_CW);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     if (windowConfig.msaa) glEnable(GL_MULTISAMPLE);   
     
@@ -253,6 +214,7 @@ int main(int argc, char *argv[])
         
         if (!windowConfig.isFocused) {
             accumulator = 0.0;
+            prevTime = glfwGetTime();
             continue;
         }
 
@@ -355,10 +317,10 @@ int main(int argc, char *argv[])
             glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
             glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
-            //rot_modelo = glm::normalize(nueva_rot);
+            rot_modelo = glm::normalize(nueva_rot);
             modelTrans.r = rot_modelo;
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(delay_s)); // TEMPORAL, PARA RETRASAR EL JUEGO ARTIFICIALMENTE
+            std::this_thread::sleep_for(std::chrono::milliseconds(runtimeOpt.frameDelay)); // TEMPORAL, PARA RETRASAR EL JUEGO ARTIFICIALMENTE
 
             accumulator -= FIXED_TICK_TIME; // Se resta al tiempo acumulado el tiempo que dura un Tick
             steps++; // Acumulamos un Tick seguido en esta instancia del bucle
@@ -375,9 +337,7 @@ int main(int argc, char *argv[])
 
         camera.updateMatrix(alpha);
         
-        model.Draw(&shaderProgram, &camera, &modelTrans);
-        modelo0.Draw(&shaderProgram, &camera, modelTrans0);
-        modelo1.Draw(&shaderProgram, &camera, modelTrans1);
+        model.Draw(&shaderProgram, &camera, modelTrans);
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
@@ -506,39 +466,53 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
     }
 }
 
+void setArgVal(const std::string& name, int value)
+{
+    if(name == "msaaSamples") windowConfig.msaa = value;
+    if(name == "windowMode")  windowConfig.windowMode = value;
+    if(name == "frameDelay")  runtimeOpt.frameDelay = value;
+    if(name == "glFrontFace") runtimeOpt.gl_frontFace = value;
+}
+
+void setArgVal(const std::string& name, bool value)
+{
+    if(name == "enableVsync")      windowConfig.vsync = value;
+    if(name == "glEnableCull")     runtimeOpt.gl_cullFace = value;
+    if(name == "glEnableDepthTest")runtimeOpt.gl_depthTest = value;
+    if(name == "glPoligonMode")    runtimeOpt.gl_poligonMode = value;
+}
+
+void setArgVal(const std::string& name, const std::string& value)
+{
+    if(name == "help") printf("[CMD ARGS OPTIONS] -> (bool)enableVsync, (int)msaaSamples, (int)windowMode, (int)frameDelay, (string)workingDir, (bool)glEnableCull (glEnableDepthTest), (bool)glPoligonMode, (int)glFrontFace");
+    if(name == "workingDir") runtimeOpt.asset_dir = value;
+    if(name == "modelPath") runtimeOpt.model_path = "models/" + value;
+}
+
 void resolveArgs(int argc, char* argv[])
 {
-    if(argc <= 0) return;
-    try {
-        printf("[INFO] Resolving %d arguments\n", argc-1);
+    printf("[INFO] Resolving %d shell arguments:\n   %s\n", argc-1, argv[0]);
+    for(int i = 1; i < argc; i++)
+    {
+        std::string token = argv[i];
+        if(token[0] == '-' && token[1] == '-') {
+            std::string name = token.substr(2, (token.length() - 2));
 
-        for( int i = 1; i < argc; i++ ) 
-        {
-            std::string token = argv[i];
-            std::cout << "Token " << i << ": " << token << std::endl;
-
-            if(token.find("-vsync") == 0) 
-                windowConfig.vsync = 1;
-            
-            if(token.find("-winmod") == 0)
-                windowConfig.windowMode = std::stoi(token.substr(7));
-
-            if(token.find("-D") == 0)
-                delay_s = std::stoi(token.substr(2, 3));
-            
-            if(token.find("-wd") == 0)
-                working_dir = token.substr(3);
-
-            if(token.find("-glEnableCull") == 0)
-                glcull = true;
-
-            if(token.find("-glDisableDepthTest") == 0)
-                gldepthtest = false;
-
-            if(token.find("-glShowPrimitives") == 0)
-                showPrimitives = true;
+            if(i + 1 < argc) // significa que el siguiente token puede ser un valor
+            {
+                std::string value = argv[i+1];
+                if(value.rfind("--", 0) != 0) {
+                    // el siguiente token es un valor si el caracter 0 y 1 son -
+                    if (kirtash::stringIsInt(value))
+                        setArgVal(name, std::stoi(value));
+                    else 
+                        setArgVal(name, value);
+                    i++;
+                    continue;
+                }
+            }
+            // como no se ha saltado esta interaccion significa que es un argumento sin valor (bool)
+            setArgVal(name, true);
         }
-    } catch(const std::exception& e) {
-        printf("[ERROR] while resolving arguments\n");
     }
 }

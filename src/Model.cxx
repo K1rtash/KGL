@@ -1,9 +1,18 @@
+#include <iostream>
+#include <filesystem>
+
 #include "Model.h"
-#include "iostream"
 
 Model::Model(const char* file) 
 {
-    loadModel(file);
+    // Normalizar ruta
+    std::string path = file;
+    for(int i = 0; i < path.length(); i++)
+        if(path[i] == '\\') path[i] = '/';
+
+    src_file = path.c_str();
+    printf("[INFO] Loading model: '%s\n'", src_file);
+    loadModel(path);
 }
 
 void Model::Draw(Shader* shader, Camera* camera, Transform transform)
@@ -41,6 +50,41 @@ Vertex processMeshVertex(aiMesh* mesh, unsigned int i)
     return vertex; // Ya esta completa esta estructura de Vertex, la añadimos al vector que define este Mesh
 }
 
+std::string Model::resolveTexturePath(const std::string& tex)
+{
+    std::string modelPath = src_file;
+    // 1. Normalizar barras
+    std::string t = tex;
+    for (char& c : t) if (c == '\\') c = '/';
+
+    // 2. Si es textura embebida (*0, *1...)
+    if (!t.empty() && t[0] == '*')
+        return t;
+
+    namespace fs = std::filesystem;
+
+    fs::path modelDir = fs::path(modelPath).parent_path();
+    fs::path texRel   = fs::path(t);
+    fs::path texAbs   = modelDir / texRel;
+
+    if (fs::exists(texAbs))
+        return texAbs.string();
+
+    // probar carpeta textures/
+    fs::path alt = modelDir / "textures" / texRel.filename();
+    if (fs::exists(alt))
+        return alt.string();
+
+    // probar al lado del glTF
+    fs::path alt2 = modelDir / texRel.filename();
+    if (fs::exists(alt2))
+        return alt2.string();
+
+    printf("[ERROR] Texture for model '%s' not found!", src_file);
+    return tex;
+}
+
+
 vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType)
 {
     vector<Texture> textures;
@@ -59,13 +103,19 @@ vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, T
             }
         }
 
-        if(!alreadyLoaded) {
-            std::string texPath = directory + '/' + str.C_Str(); // ruta absoluta a la textura
-            Texture texture{getDiscFileData(texPath.c_str()), i, texType}; // crea un objeto textura
-            texture.path = str.C_Str();
+        // Si la textura no esta ya en memoria, la cargamos y guardamos
+        if(!alreadyLoaded)
+        {
+            //std::string texPath = directory + '/' + str.C_Str(); // ruta absoluta a la textura
+            
+            // Se obtiene el path de la textura y se crea el objeto
+            std::string texPath = resolveTexturePath(str.C_Str());
+            Texture texture{getDiscFileData(texPath.c_str()), i, texType};
 
-            textures.push_back(texture); // lo añade al vector de tipo de texturas
-            textures_loaded.push_back(texture); // la guarda para no tener que cargarla nuevamente
+            // Guardamos el path de la textura manualmente y se añade a vectores
+            texture.path = str.C_Str();
+            textures.push_back(texture);
+            textures_loaded.push_back(texture);
         }
     }
     return textures;

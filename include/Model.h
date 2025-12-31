@@ -18,10 +18,12 @@ private:
     vector<Mesh> meshes;
     vector<Texture> textures_loaded;
     std::string directory;
+    const char* src_file; // .gltf o .obj path ABSOLUTO
 
     void loadModel(std::string path);
     void processNode(aiNode* node, const aiScene* scene);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
     vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType);
+    std::string resolveTexturePath(const std::string& tex);
 };
 #endif
