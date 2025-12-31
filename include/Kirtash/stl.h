@@ -6,7 +6,7 @@
 
 namespace kirtash {
 
-    bool stringIsInt(std::string val)
+    inline bool stringIsInt(std::string val)
     {
         if(val.empty()) return false; // si esta vacio no puede ser un numero
 
@@ -20,6 +20,19 @@ namespace kirtash {
             if(!std::isdigit(val[i])) return false;
         }
         return true;
+    }
+
+    /**
+     * @brief Replaces all \ characters in a string for /
+     * @param str Original string
+     * @returns Normalized string
+     */
+    inline std::string normalizeString(std::string str)
+    {
+        for(int i = 0; i < str.length(); i++)
+            if(str[i] == '\\') str[i] = '/';
+
+        return str;
     }
 }
 #endif

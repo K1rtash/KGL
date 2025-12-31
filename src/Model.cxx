@@ -2,16 +2,13 @@
 #include <filesystem>
 
 #include "Model.h"
+#include "Kirtash/stl.h"
 
 Model::Model(const char* file) 
 {
-    // Normalizar ruta
-    std::string path = file;
-    for(int i = 0; i < path.length(); i++)
-        if(path[i] == '\\') path[i] = '/';
-
+    std::string path = kirtash::normalizeString(file);
     src_file = path.c_str();
-    printf("[INFO] Loading model: '%s\n'", src_file);
+    printf("[INFO] Loading model: '%s'\n", src_file);
     loadModel(path);
 }
 

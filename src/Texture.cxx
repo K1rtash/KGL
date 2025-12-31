@@ -1,4 +1,5 @@
 #include "Texture.h"
+
 #include <stb/stb_image.h>
 #include <iostream>
 #include <string>
