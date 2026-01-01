@@ -9,7 +9,6 @@
             "GLAD_DIR": "C:/DEV/SDK/Headers/glad",
             "GLFW_DIR": "C:/DEV/SDK/Static/GLFW",
             "GLM_DIR": "C:/DEV/SDK/Headers/glm",
-            "JSON_DIR": "C:/DEV/SDK/Headers/nlohmann_json",
             "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp"
       }
     },
@@ -21,7 +20,6 @@
             "GLAD_DIR": "C:/DEV/SDK/Headers/glad",
             "GLFW_DIR": "C:/DEV/SDK/Static/GLFW",
             "GLM_DIR": "C:/DEV/SDK/Headers/glm",
-            "JSON_DIR": "C:/DEV/SDK/Headers/nlohmann_json",
             "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp"
       }
     }

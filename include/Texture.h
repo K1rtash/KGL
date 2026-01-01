@@ -75,13 +75,5 @@ public:
      * @brief Frees all resources associated with this object
      */
     void Delete();
-
-    /**
-     * @brief Modify a SAMPLER tipe uniform
-     * @param shader Target shader program
-     * @param uniform Uniform name
-     * @param unit Texture unit
-     */
-    void texUnit(Shader* shader, const char* uniform, GLuint unit);
 };
 #endif

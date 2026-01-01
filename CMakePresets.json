@@ -17,9 +17,10 @@
         "hidden": true,
         "description": "Para versiones finales, trata warnings como errores y optimiza",
         "inherits": ["base"],
+        "binaryDir": "build/release",
         "cacheVariables": {
             "CMAKE_BUILD_TYPE": "Release",
-            "CMAKE_CXX_FLAGS": "-O3 -Werror",
+            "CMAKE_CXX_FLAGS": "-O3",
             "KGL_COPY_ASSETS": true
         }
     },

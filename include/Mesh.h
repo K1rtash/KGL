@@ -26,11 +26,11 @@ public:
     vector<Vertex> vertices;
     vector<GLuint> indices;
     vector<Texture> textures;
-    glm::mat4 local_trans;
+    glm::mat4 local_trans; /// Transformacion de este mesh en su modelo 
 
     VAO vao;
 
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 local_trans = glm::mat4{1.0f});
+    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 transform = glm::mat4{1.0f});
     void Draw
 	(
 		Shader* shader, 

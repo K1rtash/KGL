@@ -2,7 +2,7 @@
 #include "Input.h"
 
 Camera::Camera(float width, float height, glm::vec3 position) : 
-    curr{position, glm::quat(1, 0, 0, 0)}, frustum{45.0f, 0.1f, 100.0f, width, height, std::max(0.1f, width / height)}
+    curr{ .t = position, .r = glm::quat{1, 0, 0, 0}, .s = glm::vec3{1.0, 1.0, 1.0}}, frustum{45.0f, 0.1f, 100.0f, width, height, std::max(0.1f, width / height)}
 {
 }
 
@@ -15,11 +15,11 @@ void Camera::setViewport(float FOVdeg, float nearPlane, float farPlane)
 
 void Camera::updateMatrix(double alpha)
 {
-    intp.pos = prev.pos + (float)alpha * (curr.pos - prev.pos);
-    intp.rot = glm::slerp(prev.rot, curr.rot, (float)alpha);
+    intp.t = prev.t + (float)alpha * (curr.t - prev.t);
+    intp.r = glm::slerp(prev.r, curr.r, (float)alpha);
 
-    glm::mat4 view = glm::mat4_cast(glm::conjugate(intp.rot));
-    view = glm::translate(view, -intp.pos);
+    glm::mat4 view = glm::mat4_cast(glm::conjugate(intp.r));
+    view = glm::translate(view, -intp.t);
     glm::mat4 proj = glm::perspective(glm::radians(frustum.fov), frustum.aspect, frustum.nearPlane, frustum.farPlane);
 
     cameraMatrix = proj * view;
@@ -57,11 +57,11 @@ void Camera::updateFixedInput(GLFWwindow* window, double deltaTime)
     glm::quat qYaw   = glm::angleAxis(glm::radians(yaw),   glm::vec3(0,1,0));
     glm::quat qPitch = glm::angleAxis(glm::radians(pitch), glm::vec3(1,0,0));
 
-    curr.rot = glm::normalize(qYaw * qPitch);
+    curr.r = glm::normalize(qYaw * qPitch);
 
     // ===== MOVIMIENTO =====
-    glm::vec3 VecForward = curr.rot * glm::vec3(0,0,-1);
-    glm::vec3 VecRight = curr.rot * glm::vec3(1,0,0);
+    glm::vec3 VecForward = curr.r * glm::vec3(0,0,-1);
+    glm::vec3 VecRight = curr.r * glm::vec3(1,0,0);
     glm::vec3 VecUp = glm::vec3(0,1,0);
 
     float speed0 = speed;
@@ -70,40 +70,13 @@ void Camera::updateFixedInput(GLFWwindow* window, double deltaTime)
     float vel = speed0 * (float)deltaTime;
 
 
-    if (key_W) curr.pos += VecForward * vel;
-    if (key_S) curr.pos -= VecForward * vel;
-    if (key_A) curr.pos -= VecRight * vel;
-    if (key_D) curr.pos += VecRight * vel;
-    if (key_SPACE) curr.pos += VecUp * vel;
-    if (key_LCTRL) curr.pos -= VecUp * vel;
+    if (key_W) curr.t += VecForward * vel;
+    if (key_S) curr.t -= VecForward * vel;
+    if (key_A) curr.t -= VecRight * vel;
+    if (key_D) curr.t += VecRight * vel;
+    if (key_SPACE) curr.t += VecUp * vel;
+    if (key_LCTRL) curr.t -= VecUp * vel;
 }
-
-/*void Camera::captureMouse(GLFWwindow* window)
-{    
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) != GLFW_PRESS)
-    {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        firstClick = true;
-        return;
-    }
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-    if (firstClick)
-    {
-        glfwSetCursorPos(window, frustum.width / 2.0, frustum.height / 2.0);
-        firstClick = false;
-        return;
-    }
-
-    double x, y;
-    glfwGetCursorPos(window, &x, &y);
-
-    mouseDX += float(x - frustum.width  * 0.5f);
-    mouseDY += float(y - frustum.height * 0.5f);
-
-    glfwSetCursorPos(window, frustum.width * 0.5, frustum.height * 0.5);
-}*/
 
 void Camera::updateScroll(double scroll_delta)
 {
@@ -117,14 +90,4 @@ void Camera::updateCursor(float dx, float dy)
 {
     mouseDX += dx;
     mouseDY += dy;
-}
-
-const Camera::Transform* Camera::getTransform() const
-{ 
-    return &intp; 
-}
-
-const glm::mat4* Camera::getMatrix() const
-{
-    return &cameraMatrix;
 }

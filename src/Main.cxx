@@ -33,6 +33,7 @@ struct KGL_RuntimeOpt
     bool gl_depthTest = true;
     bool gl_poligonMode = false;
     bool useWorkingDir = false;    
+    int rotateAxis = 0;
     std::string use_model;
 } runtimeOpt;
 
@@ -47,6 +48,7 @@ struct KGL_WindowConfig
 {
     int width = 1280, height = 720, windowMode = WINDOWMODE_WINDOWED, msaa = 16, vsync = 0, isFocused = 1;
     const float LOGICAL_WIDTH = 1920.0f, LOGICAL_HEIGHT = 1080.0f, LOGICAL_ASPECT = LOGICAL_WIDTH / LOGICAL_HEIGHT;
+    std::string title = "KGL demo";
 } windowConfig;
 
 struct KGL_MouseState
@@ -128,22 +130,22 @@ int main(int argc, char *argv[])
             glfwWindowHint(GLFW_BLUE_BITS, video->blueBits);
             windowConfig.width = video->width;  // Use our 'desktop' resolution for window size
             windowConfig.height = video->height; // to get a 'full screen borderless' window.
-            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", monitor, NULL);
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title.c_str(), monitor, NULL);
             break;
         case WINDOWMODE_WINDOWED_BORDERLESS:
             glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
             int x, y, w, h;
             glfwGetMonitorWorkarea(monitor, &x, &y, &w, &h);
-            window = glfwCreateWindow(w, h, "OpenGL Context", NULL, NULL);
+            window = glfwCreateWindow(w, h, windowConfig.title.c_str(), NULL, NULL);
             glfwSetWindowPos(window, x, y);
             break;
         case WINDOWMODE_WINDOWED:
             glfwWindowHint(GLFW_RESIZABLE, 1);
-            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", NULL, NULL);
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title.c_str(), NULL, NULL);
             glfwMaximizeWindow(window);
             break;
         default:
-            window = glfwCreateWindow(windowConfig.width, windowConfig.height, "OpenGL Context", NULL, NULL);
+            window = glfwCreateWindow(windowConfig.width, windowConfig.height, windowConfig.title.c_str(), NULL, NULL);
     }
 
     glfwMakeContextCurrent(window);
@@ -171,10 +173,13 @@ int main(int argc, char *argv[])
 
     Model model{getAbsolutePath(runtimeOpt.use_model, KGL_RelativeDir::MODELS)};    
     glm::quat rot_modelo = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))};
-    Transform modelTrans;
-    modelTrans.r = rot_modelo;
-    modelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
-    modelTrans.t = glm::vec3{1.0, 1.0, 1.0};
+    Transform modelTrans {
+        .t = glm::vec3{1.0f, 1.0f, 1.0f},
+        .r = rot_modelo,
+        .s = glm::vec3{1.0f, 1.0f, 1.0f}
+    };
+    float modelsRotationRad = 0.0f;
+    double modelScale = 1.0;
 
     Vertex lightVertices[] =
     { //     COORDINATES     //
@@ -209,13 +214,14 @@ int main(int argc, char *argv[])
 
     std::vector<Texture> tex;
     Mesh lightModel{Lverts, Lind, tex};    
-    Transform lightModelTrans;
-    lightModelTrans.r = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))};
-    lightModelTrans.s = glm::vec3{1.0f, 1.0f, 1.0f};
-    lightModelTrans.t = glm::vec3{0.5, 1.5, 0.5};
+    Transform lightModelTrans {
+        .t = glm::vec3{0.5, 1.5, 0.5},
+        .r = glm::quat{glm::angleAxis(glm::radians(270.0f), glm::vec3(0,1,0))},
+        .s = glm::vec3{1.0f, 1.0f, 1.0f}
+    };
     glm::vec4 lightColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 
-    std::vector<Transform> coches;
+    std::vector<Transform> entidades;
 
     if(runtimeOpt.gl_poligonMode) glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     if(runtimeOpt.gl_depthTest) glEnable(GL_DEPTH_TEST); else glDisable(GL_DEPTH_TEST);
@@ -281,7 +287,7 @@ int main(int argc, char *argv[])
             }
             if(getKey(GLFW_KEY_X) == KGL_KeyState::Press) 
             {
-                lightModelTrans.t = camera.getTransform()->pos;
+                lightModelTrans.t = camera.getTransform().t;
             }
             if( keyDown(getKey(GLFW_KEY_UP)) ) 
             {
@@ -312,18 +318,41 @@ int main(int argc, char *argv[])
                 v += 0.03f;
                 if(v > 1.0f) v = 1.0f;  
             }
-            if(getKey(GLFW_KEY_C) == KGL_KeyState::Press) h = 0.0f, s = 0.0f, v = 1.0f;
+            if(getKey(GLFW_KEY_C) == KGL_KeyState::Press) {
+                h = 0.0f, s = 0.0f, v = 1.0f;
+                modelsRotationRad = 0.0f;
+                modelScale = 1.0;
+            }
             
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
                 std::cout << "HSV: " << h << ", " << s << ", " << v << std::endl;
                 camera.setViewport(45.0f, 0.1f, 100.0f);
             }
             
-            if(getKey(GLFW_KEY_2) == KGL_KeyState::Press)
-                coches.push_back(nuevoCoche(camera.getTransform()->pos));
-
+            if(getKey(GLFW_KEY_2) == KGL_KeyState::Press) {
+                Transform trans;
+                trans.t = camera.getTransform().t;
+                trans.s = glm::vec3{1.0, 1.0, 1.0};
+                entidades.push_back(trans);
+            }
             if(getKey(GLFW_KEY_3) == KGL_KeyState::Press)
-                coches.clear();
+                entidades.clear();
+
+            if(getKey(GLFW_KEY_H) == KGL_KeyState::Press) {
+                modelsRotationRad += 1.0f;
+            }
+
+            if(getKey(GLFW_KEY_J) == KGL_KeyState::Press) {
+                modelsRotationRad -= 1.0f;
+            }
+
+            if(keyDown(getKey(GLFW_KEY_U))) {
+                modelScale += 0.05;
+            }
+            
+            if(keyDown(getKey(GLFW_KEY_N))) {
+                modelScale -= 0.05;
+            }
 
             if(glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
                 mouseState.captured = 1;
@@ -334,7 +363,7 @@ int main(int argc, char *argv[])
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
-            string title = std::format("OpenGL Context | {} FPS | Ms/frame: {}", (int)fps, (float)msPerFrame);
+            string title = std::format("{} | {} FPS | Ms/frame: {}", windowConfig.title, (int)fps, (float)msPerFrame);
             glfwSetWindowTitle(window, title.c_str());
 
             float lr = 0, lg = 0, lb =0;
@@ -348,11 +377,13 @@ int main(int argc, char *argv[])
             //outlineShader.Activate();
             //glUniform1f(outlineShader.GetUniformLoc("outline"), 0.08f);
 
-            glm::vec3 eje_rot{1.0f, 0.0f, 0.0f};
-            glm::quat rot_aplicar{glm::angleAxis(glm::radians(10.0f), eje_rot)};
+            glm::vec3 axis{0, 0, 0};
+            if(runtimeOpt.rotateAxis == 0) axis = glm::vec3{1, 0, 0};
+            if(runtimeOpt.rotateAxis == 1) axis = glm::vec3{0, 1, 0};
+            if(runtimeOpt.rotateAxis == 2) axis = glm::vec3{0, 0, 1};
+            glm::quat rot_aplicar{glm::angleAxis(glm::radians(modelsRotationRad), axis)};
             glm::quat nueva_rot = rot_aplicar * rot_modelo;
-            //rot_modelo = glm::normalize(nueva_rot);
-            modelTrans.r = rot_modelo;
+            rot_modelo = glm::normalize(nueva_rot);
 
             std::this_thread::sleep_for(std::chrono::milliseconds(runtimeOpt.frameDelay)); // TEMPORAL, PARA RETRASAR EL JUEGO ARTIFICIALMENTE
 
@@ -371,15 +402,10 @@ int main(int argc, char *argv[])
 
         camera.updateMatrix(alpha);
         
-        for(int i = 0; i < coches.size(); i++) {
-            Transform trans = coches[i];
-            double r0 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
-            double r1 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
-            double r2 = 0.0 + rand() / (double)RAND_MAX * (1.0 - 0.0);
-            glm::vec3 axis(r0, r1, r2);
-            glm::normalize(axis);
-            float angle = glm::radians((float)sin(deltaTime * 1000.0));
-            trans.r = glm::quat{glm::angleAxis(angle, axis)};
+        for(int i = 0; i < entidades.size(); i++) {
+            Transform trans = entidades[i];
+            trans.r = rot_modelo;
+            trans.s = glm::vec3{modelScale};
             model.Draw(&shaderProgram, &camera, trans);
         }
 
@@ -517,6 +543,11 @@ void setArgVal(const std::string& name, int value)
     if(name == "windowMode")    windowConfig.windowMode = value;
     if(name == "frameDelay")    runtimeOpt.frameDelay = value;
     if(name == "glFrontFace")   runtimeOpt.gl_frontFace = value;
+    if(name == "rotateAxis")   {
+        if(value < 0) value = 0;
+        if(value > 2) value = 2;
+        runtimeOpt.rotateAxis = value;
+    }
 }
 
 void setArgVal(const std::string& name, bool value)

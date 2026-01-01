@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.16)
-project(opengl)
+cmake_minimum_required(VERSION 3.21)
+project(KGL)
 
 set(CMAKE_CXX_STANDARD 23)
 
@@ -27,10 +27,18 @@ include_directories(
 file(GLOB SRC_FILES ${PROJECT_SOURCE_DIR}/src/*.cxx)
 file(GLOB EXT_SRC_FILES ${PROJECT_SOURCE_DIR}/src/ext/*)
 
-add_executable(${PROJECT_NAME} 
+add_executable(${PROJECT_NAME}
     ${SRC_FILES} 
     ${EXT_SRC_FILES}
     ${GLAD_DIR}/src/glad.c
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+    ${GLAD_DIR}/include
+    ${GLM_DIR}/include
+    ${GLFW_DIR}/include
+    ${ASSIMP_DIR}/include
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
@@ -38,8 +46,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     OpenGL::GL
     assimp::assimp
 )
-
-target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
 if(KGL_COPY_ASSETS)
     add_custom_command(

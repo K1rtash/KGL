@@ -2,6 +2,7 @@
 #define CAMERA_CLASS_H
 
 #include "Shader.h"
+#include "VBO.h"
 
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
@@ -23,10 +24,6 @@ private:
         float width, height;
         float aspect;
     }; 
-    struct Transform {
-        glm::vec3 pos;
-        glm::quat rot;
-    };
 public:
     /**
      * @brief Creates the object
@@ -76,18 +73,22 @@ public:
     void updateCursor(float dx, float dy);
     
     /**
-     * @returns interpolated position vec3 and rotation quaternion
+     * @brief Gets the camera's interpolated transformation in the world
+     * 
+     * @returns @ref Transform
      * 
      * Used for light calculations in the fragment shader
      */
-    const Transform* getTransform() const;
+    inline Transform getTransform() { return intp; }
 
     /**
-     * @returns interpolated matrix of transformation
+     * @brief Gets the camera's interpolated matrix of transformation
+     * 
+     * @returns Transformation matrix
      * 
      * Used to set uniform value of the vertex shader
      */
-    const glm::mat4* getMatrix() const;
+    inline glm::mat4 getMatrix() { return cameraMatrix; }
 
 private:
     Transform prev;
