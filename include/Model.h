@@ -25,7 +25,7 @@ private:
     void loadModel(std::string path);
     void processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTransform);
     Mesh processMesh(aiMesh *mesh, const aiScene *scene);
-    vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType, const aiScene* scene);
+    vector<Texture> processMaterialTex(aiMaterial *mat, aiTextureType type, Texture::Type texType, const aiScene* scene);
     std::string resolveTexturePath(const std::string& tex);
 };
 #endif

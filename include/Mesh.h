@@ -12,30 +12,18 @@
 
 using std::vector, std::string;
 
-/**
- * @class Model
- * @brief Contains the necessary OpenGL abstractions to render a 3D model with a texture
- * @see Texture
- * @see VBO
- * @see VAO
- * @see EBO
- */
 class Mesh 
 {
 public:
     vector<Vertex> vertices;
     vector<GLuint> indices;
     vector<Texture> textures;
-    glm::mat4 local_trans; /// Transformacion de este mesh en su modelo 
+    glm::mat4 transform; /// Transformacion de este mesh en su modelo 
 
     VAO vao;
 
-    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 transform = glm::mat4{1.0f});
-    void Draw
-	(
-		Shader* shader, 
-		Camera* camera,
-		const Transform* transform
-	);
+    Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> textures, glm::mat4 trans = glm::mat4{1.0f});
+    void Draw(Shader*, Camera*, const Transform*);
+    void Delete();
 };
 #endif

@@ -119,7 +119,7 @@ RawTexData getEmbeddedAssimpTexture(const aiTexture* tex)
 }
 
 
-vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, TextureType texType, const aiScene* scene)
+vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, Texture::Type texType, const aiScene* scene)
 {
     vector<Texture> textures;
     for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
@@ -140,10 +140,6 @@ vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, T
         // Si la textura no esta ya en memoria, la cargamos y guardamos
         if(!alreadyLoaded)
         {            
-            // Se obtiene el path de la textura y se crea el objeto
-            /*std::string texPath = resolveTexturePath(str.C_Str());
-            Texture texture{getDiscFileData(texPath.c_str()), i, texType};*/
-
             if (str.C_Str()[0] == '*') // textura embebida
             {
                 const aiTexture* tex = scene->GetEmbeddedTexture(str.C_Str());
@@ -193,10 +189,10 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
-        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, TextureType::DIFFUSE, scene); // vector de texturas de tipo diffuse
+        vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, Texture::Type::DIFFUSE, scene); // vector de texturas de tipo diffuse
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // añade las texturas diffuse al vector principal
 
-        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, TextureType::SPECULAR, scene); // vector de texturas de tipo specular
+        vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, Texture::Type::SPECULAR, scene); // vector de texturas de tipo specular
         textures.insert(textures.end(), specMaps.begin(), specMaps.end()); // añade las texturas specular al vector principal
     }
 
@@ -224,7 +220,7 @@ void Model::processNode(aiNode* node, const aiScene* scene, glm::mat4 parentTran
     {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]]; 
         Mesh processed_mesh = processMesh(mesh, scene); // transforma el mesh de assimp al formato mio
-        processed_mesh.local_trans = globalTransform; // añade la transformación del nodo
+        processed_mesh.transform = globalTransform; // añade la transformación del nodo
 
         meshes.push_back(processed_mesh);			
     }

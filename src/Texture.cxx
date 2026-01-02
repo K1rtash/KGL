@@ -33,7 +33,7 @@ RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colo
     return data;
 }
 
-Texture::Texture(RawTexData data, GLuint slot, TextureType type) : type{type}, unit{slot} 
+Texture::Texture(RawTexData data, GLuint slot, Type type) : type{type}, unit{slot} 
 {
     if (data.bytes == nullptr) throw std::runtime_error("null ptr to texture byte data (tex slot: " + std::to_string(slot) + ")");
 
@@ -48,6 +48,7 @@ Texture::Texture(RawTexData data, GLuint slot, TextureType type) : type{type}, u
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+    GLuint format;
     if (data.clrch >= 4) 
         format = GL_RGBA;
     else 

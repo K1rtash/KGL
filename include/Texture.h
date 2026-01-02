@@ -4,10 +4,6 @@
 #include <glad/glad.h>
 #include "Shader.h"
 
-enum class TextureType : unsigned int
-{
-    DIFFUSE, SPECULAR
-};
 
 struct RawTexData 
 {
@@ -32,6 +28,7 @@ RawTexData getDiscFileData(const char* file);
  * @returns Texture raw data @ref RawTexData
  */
 RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colorCh);
+//LEGACY
 
 /**
  * @class Texture 
@@ -40,29 +37,40 @@ RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colo
  */
 class Texture {
 public:
-    TextureType type;
-    GLenum format;
-    GLuint id;
-    GLuint unit;
+    GLuint id, unit;
     std::string path;
-    /**
-     * @brief Creates a new GPU texture
-     * 
-     * This function will free memory allocated to the raw texture data pixel bytes
-     * 
-     * @param data @ref ByteData
-     * @param slot OpenGL's slot to save a texture (usually 0)
-     * @param texType @ref TextureType
-     */
-    Texture(RawTexData data, GLuint slot, TextureType type);
 
     /**
-     * @brief Calls Delete()
+     * @brief Uniform sampler2D type for PBR
      */
+    enum Type : unsigned int{
+        DIFFUSE, SPECULAR, NORMAL, HEIGHT, METALLIC, ROUGHNESS, METALLIC_ROUGHNESS, AO, EMISSIVE, BASE_COLOR
+    } type;
+
+    /**
+     * @param bytes Embedded data
+     * @param width Image width in pixels
+     * @param height Image height in pixels
+     * @param colorChannels Image color channels
+     * @param type Material type @ref Type
+     * @warning You must free byte data after calling this function!
+     */
+    Texture(unsigned char* bytes, int width, int height, int colorChannels, Type type, unsigned int unit);
+
+    /**
+     * @param path Disc file path
+     * @param type Material type @ref Type
+     */
+    Texture(std::string path, Type type, unsigned int unit);
+
+    Texture(RawTexData data, GLuint slot, Type type); //constructor legacy
+
     ~Texture();
 
     /**
-     * @brief Uses this texture on all GL function calls related to this texture's type
+     * @brief Binds the texture and activates the texture unit
+     * 
+     * Use before
      */
     void Bind();
 
@@ -75,5 +83,15 @@ public:
      * @brief Frees all resources associated with this object
      */
     void Delete();
+
+private:
+    /**
+     * @brief Resolves texture data
+     * @param bytes RGBA byte data 
+     * @param w Width 
+     * @param h Height 
+     * @param cc Color channels 
+     */
+    void load(unsigned char* bytes, int w, int h, int cc);
 };
 #endif
