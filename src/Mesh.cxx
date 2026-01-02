@@ -16,24 +16,6 @@ Mesh::Mesh(vector<Vertex> vertices, vector<GLuint> indices, vector<Texture> text
     vbo.Unbind();
 }
 
-/// LLeva la cuenta del id del sampler de textura de esta iteración de el bucle
-/*struct SamplerNum { 
-	unsigned int diffuse, specular;
-};*/
-
-/// Devuelve el nombre del sampler que se tiene que modificar
-/*std::string getSamplerName(Texture::Type type, SamplerNum num)
-{
-	switch(type) {
-		case KGL_TextureType::DIFFUSE:
-			num.diffuse++;
-			return ("diffuse" + std::to_string(num.diffuse));
-		case KGL_TextureType::SPECULAR:
-			num.specular++;
-			return ("specular" + std::to_string(num.specular));
-	}
-	return std::string{};
-}*/
 #include <iostream>
 void Mesh::Draw(Shader* shader, Camera* camera, const Transform* trans)
 {
@@ -42,7 +24,6 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* trans)
 
 	// * TEXTURAS *
 	unsigned int diffuse_n = 1, specular_n = 1;
-	//SamplerNum samplerN{0};
 
 	for (unsigned int i = 0; i < textures.size(); i++) // Iterar todas las texturas del mesh 
 	{
@@ -51,16 +32,15 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* trans)
 		std::string sampler;
 		switch(textures[i].type) {
 			case Texture::Type::DIFFUSE: 
-			sampler = ("diffuse" + std::to_string(diffuse_n++)); 
-			diffuse_n++;
+				diffuse_n++;
+				sampler = ("diffuse" + std::to_string(diffuse_n++)); 
 				break;
 			case Texture::Type::SPECULAR:
-			sampler =  ("specular" + std::to_string(specular_n++)); 
-			specular_n++;
+				specular_n++;
+				sampler =  ("specular" + std::to_string(specular_n++)); 
 				break;
 		}
 
-		//textures[i].Bind();
 		glUniform1i(shader->GetUniformLoc(sampler), i); // Modifica el sampler2D en el shader
 		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 	}

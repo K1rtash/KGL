@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 #include "Shader.h"
 
-
+/*
 struct RawTexData 
 {
     unsigned char* bytes;
@@ -16,7 +16,7 @@ struct RawTexData
  * @param path Image location in disc
  * @returns Texture raw data @ref RawTexData
  */
-RawTexData getDiscFileData(const char* file);
+//RawTexData getDiscFileData(const char* file);
 
 /**
  * @brief Interprets embedded byte data into raw texture data
@@ -27,14 +27,9 @@ RawTexData getDiscFileData(const char* file);
  * @param colorCh Image color channels
  * @returns Texture raw data @ref RawTexData
  */
-RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colorCh);
-//LEGACY
+//RawTexData getEmbeddedData(unsigned char* bytes, int width, int height, int colorCh);
 
-/**
- * @class Texture 
- * @brief GPU-managed 2D texture
- * Loader based on stb_image
- */
+
 class Texture {
 public:
     GLuint id, unit;
@@ -63,9 +58,7 @@ public:
      */
     Texture(std::string path, Type type, unsigned int unit);
 
-    Texture(RawTexData data, GLuint slot, Type type); //constructor legacy
-
-    ~Texture();
+    //Texture(RawTexData data, GLuint slot, Type type); //constructor legacy
 
     /**
      * @brief Binds the texture and activates the texture unit

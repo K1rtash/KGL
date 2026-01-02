@@ -104,5 +104,5 @@ void main()
 {
     float depth = logisticDepth(gl_FragCoord.z, 0.5, 5.0); 
 	//FragColor = direcLight() * (1.0 - depth) + vec4(depth * vec3(0.2, 0.3, 0.3), 1.0);
-    FragColor = direcLight();
+    FragColor = pointLight();
 }

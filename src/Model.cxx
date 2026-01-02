@@ -81,7 +81,7 @@ std::string Model::resolveTexturePath(const std::string& tex)
     return tex;
 }
 
-RawTexData getEmbeddedAssimpTexture(const aiTexture* tex)
+Texture getEmbeddedAssimpTexture(const aiTexture* tex, Texture::Type type, unsigned int iterator)
 {
     if (tex->mHeight == 0) {
         // Compressed
@@ -91,41 +91,33 @@ RawTexData getEmbeddedAssimpTexture(const aiTexture* tex)
         int w, h, ch;
         unsigned char* decoded = stbi_load_from_memory(data, size, &w, &h, &ch, 0);
 
-        return RawTexData{decoded, ch, w, h};
+        return Texture{decoded, w, h, ch, type, iterator};
     } 
-    else {
-        // RAW
-        int w = tex->mWidth;
-        int h = tex->mHeight;
 
-        unsigned char* pixels = new unsigned char[w * h * 4];
+    // RAW
+    int w = tex->mWidth;
+    int h = tex->mHeight;
 
-        for (int i = 0; i < w * h; i++) {
-            pixels[i*4 + 0] = tex->pcData[i].r;
-            pixels[i*4 + 1] = tex->pcData[i].g;
-            pixels[i*4 + 2] = tex->pcData[i].b;
-            pixels[i*4 + 3] = tex->pcData[i].a;
-        }
+    unsigned char* pixels = new unsigned char[w * h * 4];
 
-        //RawTexData data = getEmbeddedData(pixels, w, h, 4);
-        RawTexData data{
-            .bytes = pixels, 
-            .clrch = 4, 
-            .width = w, 
-            .height = h, 
-        };
-        return data;
+    for (int i = 0; i < w * h; i++) {
+        pixels[i*4 + 0] = tex->pcData[i].r;
+        pixels[i*4 + 1] = tex->pcData[i].g;
+        pixels[i*4 + 2] = tex->pcData[i].b;
+        pixels[i*4 + 3] = tex->pcData[i].a;
     }
+
+    return Texture{pixels, w, h, 4, type, iterator};
 }
 
 
-vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, Texture::Type texType, const aiScene* scene)
+vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType aiTexType, Texture::Type type, const aiScene* scene)
 {
     vector<Texture> textures;
-    for(unsigned int i = 0; i < mat->GetTextureCount(type); i++)
+    for(unsigned int i = 0; i < mat->GetTextureCount(aiTexType); i++)
     {
         aiString str; // nombre del archivo de la textura
-        mat->GetTexture(type, i, &str);
+        mat->GetTexture(aiTexType, i, &str);
 
         bool alreadyLoaded = false;
         for(unsigned int j = 0; j < textures_loaded.size(); j++) // itera todas las texturas cargadas comprobando si el path de cada una es igual que el actual
@@ -143,8 +135,7 @@ vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, T
             if (str.C_Str()[0] == '*') // textura embebida
             {
                 const aiTexture* tex = scene->GetEmbeddedTexture(str.C_Str());
-                RawTexData data = getEmbeddedAssimpTexture(tex);
-                Texture texture{data, i, texType};
+                Texture texture = getEmbeddedAssimpTexture(tex, type, i);
 
                 texture.path = str.C_Str();
                 textures.push_back(texture);
@@ -153,15 +144,12 @@ vector<Texture> Model::processMaterialTex(aiMaterial *mat, aiTextureType type, T
             else // textura en disco
             {
                 std::string texPath = resolveTexturePath(str.C_Str());
-                Texture texture{getDiscFileData(texPath.c_str()), i, texType};
+                Texture texture{texPath, type, i};
                             
                 texture.path = str.C_Str();
                 textures.push_back(texture);
                 textures_loaded.push_back(texture);
             }
-
-            // Guardamos el path de la textura manualmente y se añade a vectores
-
         }
     }
     return textures;
