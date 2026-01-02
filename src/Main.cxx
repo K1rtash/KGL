@@ -33,8 +33,8 @@ struct KGL_RuntimeOpt
     bool gl_depthTest = true;
     bool gl_poligonMode = false;
     bool useWorkingDir = false;    
-    int rotateAxis = 0;
-    std::string use_model;
+    int rotateAxis = 1;
+    std::string use_model = "low-poly-truck/source/model.gltf";
 } runtimeOpt;
 
 struct KGL_Paths
@@ -79,23 +79,10 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 void resolveArgs(int argc, char* argv[]);
 void resolveDirectoryPaths();
 std::string getAbsolutePath(std::string relative, KGL_RelativeDir base);
-
+void printGLInfo();
 
 void handle_sigint(int) {
     should_exit = 1;
-}
-
-Transform nuevoCoche(glm::vec3 pos)
-{ //int n = rand() % (max - min + 1) + min;
-    //double x = min + (double)(rand() / RAND_MAX) * (max - min);
-    double s = 0.1 + rand() / (double)RAND_MAX * (2.0 - 0.1); 
-    int r = rand() % (270 - 0 + 1) + 0;
-
-    Transform modelt1;
-    modelt1.t = glm::vec3{pos.x, pos.y, pos.z};
-    modelt1.s = glm::vec3{1.0 + s, 1.0 + s, 1.0 + s};
-    modelt1.r = glm::quat{glm::angleAxis(glm::radians((float)r), glm::vec3{0.0, 1.0, 0.0})};
-    return modelt1;
 }
 
 int main(int argc, char *argv[]) 
@@ -159,11 +146,16 @@ int main(int argc, char *argv[])
     glfwSetWindowFocusCallback(window, window_focus_callback);
     glfwSetKeyCallback(window, key_callback);
 
-    if ( glfwRawMouseMotionSupported() ) glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    if ( glfwRawMouseMotionSupported() ) { 
+        glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+    } else {
+        printf("[WARNING] Your machines does not support raw mouse motion, using default input mode");
+    }
 
     gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     glfwSwapInterval(windowConfig.vsync);
 
+    printGLInfo();
     setLogicalPresentation(windowConfig.width, windowConfig.height, windowConfig.LOGICAL_ASPECT);
         
     Shader shaderProgram{getAbsolutePath("vert.glsl", KGL_RelativeDir::SHADERS), getAbsolutePath("frag.glsl", KGL_RelativeDir::SHADERS)};
@@ -554,20 +546,32 @@ void setArgVal(const std::string& name, bool value)
 {
     if(name == "enableVsync")           windowConfig.vsync = value;
     if(name == "glEnableCull")          runtimeOpt.gl_cullFace = value;
-    if(name == "glEnableDepthTest")     runtimeOpt.gl_depthTest = value;
+    if(name == "glNoDepthTest")     runtimeOpt.gl_depthTest = false;
     if(name == "glPoligonMode")         runtimeOpt.gl_poligonMode = value;
     if(name == "overrideWD")            runtimeOpt.useWorkingDir = value;
+    if(name == "help") std::cout << "[CMD LINE ARGUMENTS]\n" <<
+                                        "       NAME        |    TYPE    |   DEFAULT  |         DESC\n" <<
+                                        "* msaaSamples      |    int     |   0        | Number of aa samples to use\n" <<
+                                        "* windowMode       |    int     |   3        | Window presentation mode\n" << 
+                                        "* frameDelay       |    int     |   0        | Simulated tick lag\n" << 
+                                        "* glFrontFace      |    int     |   0        | CCW or CW face culling\n" << 
+                                        "* rotateAxis       |    int     |   1        | XYZ models rot axis\n" << 
+                                        "* enableVsync      |    bool    |   FALSE    | Use vsync\n" << 
+                                        "* glEnableCull     |    bool    |   FALSE    | Use face culling\n" << 
+                                        "* glNoDepthTest    |    bool    |   FALSE    | Disable depth testing\n" << 
+                                        "* glPoligonMode    |    bool    |   FALSE    | Render vertices\n" << 
+                                        "* overrideWD       |    bool    |   FALSE    | Override bin/ with wd\n" <<
+                                        "* model            |    string  |   ''       | Relative path to model\n" << std::endl;
 }
 
 void setArgVal(const std::string& name, const std::string& value)
 {
-    if(name == "help") printf("[CMD ARGS OPTIONS] -> (bool)enableVsync, (int)msaaSamples, (int)windowMode, (int)frameDelay, (string)workingDir, (bool)glEnableCull (glEnableDepthTest), (bool)glPoligonMode, (int)glFrontFace");
     if(name == "model") runtimeOpt.use_model = kirtash::normalizeString(value);
 }
 
 void resolveArgs(int argc, char* argv[])
 {
-    printf("[INFO] Resolving %d shell arguments:\n   %s\n", argc-1, argv[0]);
+    printf("[INFO] Resolving %d shell arguments (USE --help TO SEE ARG LIST)\n", argc-1, argv[0]);
     for(int i = 1; i < argc; i++)
     {
         std::string token = argv[i];
@@ -616,4 +620,18 @@ std::string getAbsolutePath(std::string relative, KGL_RelativeDir base)
     }
 
     return (abs / relative).string();
+}
+
+void printGLInfo() /// Se debe llamar siempre despues de crear el contexto OpenGL makeContextCurrent
+{ 
+    const GLubyte* renderer = glGetString(GL_RENDERER); // GPU
+    const GLubyte* vendor   = glGetString(GL_VENDOR);   // fabricante
+    const GLubyte* version  = glGetString(GL_VERSION);  // versión OpenGL
+    const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION); // GLSL
+
+    std::cout << "[INFO] Printing machine specifications: \n"
+                << "* GPU: " << reinterpret_cast<const char*>(renderer) << "\n" 
+                << "* Vendor: " << reinterpret_cast<const char*>(vendor) << "\n"
+                << "* OpenGL version supported: " << reinterpret_cast<const char*>(version) << "\n"
+                << "* GLSL version supported: " << reinterpret_cast<const char*>(glslVersion) << "\n";
 }

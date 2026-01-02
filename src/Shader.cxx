@@ -127,6 +127,7 @@ Shader::Shader(std::string vertex_shader_path, std::string fragment_shader_path)
 void Shader::Reload() {
     Delete();
     id = glCreateProgram();
+    std::cout << "[INFO] Reloading shaders with id: " << id << " from source. Vertex shader: '" << vertPath << "' Fragment shader: '" << fragPath << "'" << std::endl;
     try {
         create();
     } catch (std::runtime_error& e) {
