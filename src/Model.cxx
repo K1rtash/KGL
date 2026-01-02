@@ -177,11 +177,45 @@ Mesh Model::processMesh(aiMesh* mesh, const aiScene* scene)
     {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
 
+        // Diffuse
         vector<Texture> diffuseMaps = processMaterialTex(material, aiTextureType_DIFFUSE, Texture::Type::DIFFUSE, scene); // vector de texturas de tipo diffuse
         textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end()); // añade las texturas diffuse al vector principal
 
+        // Specular
         vector<Texture> specMaps = processMaterialTex(material, aiTextureType_SPECULAR, Texture::Type::SPECULAR, scene); // vector de texturas de tipo specular
         textures.insert(textures.end(), specMaps.begin(), specMaps.end()); // añade las texturas specular al vector principal
+
+        // BaseColor
+        vector<Texture> baseColorMaps = processMaterialTex(material, aiTextureType_BASE_COLOR, Texture::Type::BASE_COLOR, scene); 
+        textures.insert(textures.end(), baseColorMaps.begin(), baseColorMaps.end());
+
+        // Normal
+        vector<Texture> normalMaps = processMaterialTex(material, aiTextureType_NORMALS, Texture::Type::NORMAL, scene); 
+        textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+
+        // Height / Bump
+        vector<Texture> heightMaps = processMaterialTex(material, aiTextureType_HEIGHT, Texture::Type::HEIGHT, scene);
+        textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+
+        // Metallic
+        vector<Texture> metallicMaps = processMaterialTex(material, aiTextureType_METALNESS, Texture::Type::METALLIC, scene);
+        textures.insert(textures.end(), metallicMaps.begin(), metallicMaps.end());
+
+        // Roughness
+        vector<Texture> roughMaps = processMaterialTex(material, aiTextureType_DIFFUSE_ROUGHNESS, Texture::Type::ROUGHNESS, scene);
+        textures.insert(textures.end(), roughMaps.begin(), roughMaps.end());
+
+        // Metallic-Roughness (glTF usa esto)
+        vector<Texture> mrMaps = processMaterialTex(material, aiTextureType_UNKNOWN, Texture::Type::METALLIC_ROUGHNESS, scene);
+        textures.insert(textures.end(), mrMaps.begin(), mrMaps.end());
+
+        // Ambient Occlusion
+        vector<Texture> aoMaps = processMaterialTex(material, aiTextureType_AMBIENT_OCCLUSION, Texture::Type::AO, scene);
+        textures.insert(textures.end(), aoMaps.begin(), aoMaps.end());
+
+        // Emissive
+        vector<Texture> emissiveMaps = processMaterialTex(material, aiTextureType_EMISSIVE, Texture::Type::EMISSIVE, scene);
+        textures.insert(textures.end(), emissiveMaps.begin(), emissiveMaps.end());
     }
 
     return Mesh{vertices, indices, textures};
