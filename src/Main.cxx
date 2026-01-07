@@ -173,6 +173,13 @@ int main(int argc, char *argv[])
     float modelsRotationRad = 0.0f;
     double modelScale = 1.0;
 
+    Model model2{getAbsolutePath("statue/scene.gltf", KGL_RelativeDir::MODELS)};    
+    Transform modelTrans2 {
+        .t = glm::vec3{1.0f, 1.0f, 1.0f},
+        .r = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))},
+        .s = glm::vec3{1.0f, 1.0f, 1.0f}
+    };
+
     Vertex lightVertices[] =
     { //     COORDINATES     //
         Vertex{glm::vec3(-0.1f, -0.1f,  0.1f)},
@@ -401,6 +408,7 @@ int main(int argc, char *argv[])
             model.Draw(&shaderProgram, &camera, trans);
         }
 
+        model2.Draw(&shaderProgram, &camera, modelTrans2);
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);

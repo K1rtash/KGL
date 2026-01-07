@@ -23,27 +23,22 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* trans)
 	vao.Bind();
 
 	// * TEXTURAS *
-	unsigned int diffuse_n = 1, specular_n = 1;
+	unsigned int unit = 0;
 
 	for (unsigned int i = 0; i < textures.size(); i++) // Iterar todas las texturas del mesh 
 	{
-		glActiveTexture(GL_TEXTURE0 + i);
+		glActiveTexture(GL_TEXTURE0 + unit);
+		glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		
 		std::string sampler;
 		switch(textures[i].type) {
-			case Texture::Type::DIFFUSE: 
-				diffuse_n++;
-				sampler = ("diffuse" + std::to_string(diffuse_n++)); 
-				break;
-			case Texture::Type::SPECULAR:
-				specular_n++;
-				sampler =  ("specular" + std::to_string(specular_n++)); 
-				break;
+			case Texture::Type::DIFFUSE: sampler = "diffuse0"; break;
+			case Texture::Type::SPECULAR: sampler =  "specular0"; break; 
 		}
 
-		glUniform1i(shader->GetUniformLoc(sampler), i); // Modifica el sampler2D en el shader
-		glBindTexture(GL_TEXTURE_2D, textures[i].id);
+		glUniform1i(shader->GetUniformLoc(sampler), unit); // Modifica el sampler2D en el shader
 	}
+	glActiveTexture(GL_TEXTURE0);
 
 	// * ILUMINACIÓN *
 	glUniform3fv(shader->GetUniformLoc("camPos"), 1, glm::value_ptr(camera->getTransform().t)); // El vector de posición de la cámara se usa para calculos de luz
@@ -60,6 +55,7 @@ void Mesh::Draw(Shader* shader, Camera* camera, const Transform* trans)
 
 	// * RENDER *
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void Mesh::Delete()
