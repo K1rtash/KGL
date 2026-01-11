@@ -9,7 +9,9 @@
             "GLAD_DIR": "C:/DEV/SDK/Headers/glad",
             "GLFW_DIR": "C:/DEV/SDK/Static/GLFW",
             "GLM_DIR": "C:/DEV/SDK/Headers/glm",
-            "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp"
+            "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp",
+            "CMAKE_CXX_COMPILER": "C:/DEV/mingw64/bin/g++.exe"
+
       }
     },
     {
@@ -20,8 +22,9 @@
             "GLAD_DIR": "C:/DEV/SDK/Headers/glad",
             "GLFW_DIR": "C:/DEV/SDK/Static/GLFW",
             "GLM_DIR": "C:/DEV/SDK/Headers/glm",
-            "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp"
-      }
+            "ASSIMP_DIR": "C:/DEV/SDK/Static/Assimp",
+            "CMAKE_CXX_COMPILER": "C:/DEV/mingw64/bin/g++.exe"
+          }
     }
   ],
 

@@ -5,10 +5,7 @@
         "name": "base",
         "hidden": true,
         "generator": "Ninja",
-        "binaryDir": "build",
-        "cacheVariables": {
-            "CMAKE_CXX_COMPILER": "C:/DEV/mingw64/bin/g++.exe"
-        }
+        "binaryDir": "build"
     },
 
     {

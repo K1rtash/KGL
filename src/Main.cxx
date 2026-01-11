@@ -27,14 +27,17 @@ enum class KGL_RelativeDir {SHADERS, MODELS, ASSETS, TEXTURES, BIN, WORKING_DIRE
 
 struct KGL_RuntimeOpt
 {
-    int frameDelay = 0;
-    int gl_frontFace = 0;
-    bool gl_cullFace = false;
-    bool gl_depthTest = true;
-    bool gl_poligonMode = false;
-    bool useWorkingDir = false;    
-    int rotateAxis = 1;
-    std::string use_model = "low-poly-truck/source/model.gltf";
+    int frameDelay = 0,
+        gl_frontFace = 0,
+        gl_versionMajor = 4,
+        gl_versionMinor = 6,
+        rotateAxis = 1;
+    bool gl_cullFace = false,
+        gl_depthTest = true,
+        gl_poligonMode = false,
+        useWorkingDir = false,
+        printGLextensions = false;    
+    std::string use_model = "creeper/source/model.gltf";
 } runtimeOpt;
 
 struct KGL_Paths
@@ -65,7 +68,6 @@ void resetMouseState(KGL_MouseState& m)
     m.scrollDelta = 0.0;
 }
 
-
 void error_callback(int error, const char* description);
 void resize_callback(GLFWwindow *window, int width, int height);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
@@ -79,6 +81,9 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b);
 void resolveArgs(int argc, char* argv[]);
 void resolveDirectoryPaths();
 std::string getAbsolutePath(std::string relative, KGL_RelativeDir base);
+
+bool tryGLcontext(int major, int minor);
+void setGLcontext(int& major, int& minor);
 void printGLInfo();
 
 void handle_sigint(int) {
@@ -99,9 +104,11 @@ int main(int argc, char *argv[])
     const GLFWvidmode* video = glfwGetVideoMode(monitor);
     GLFWwindow* window;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
+    setGLcontext(runtimeOpt.gl_versionMajor, runtimeOpt.gl_versionMinor);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, runtimeOpt.gl_versionMajor);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, runtimeOpt.gl_versionMinor);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
     glfwWindowHint(GLFW_REFRESH_RATE, video->refreshRate);
     glfwWindowHint(GLFW_SAMPLES, windowConfig.msaa);
     glfwWindowHint(GLFW_RESIZABLE, !windowConfig.windowMode);
@@ -172,13 +179,6 @@ int main(int argc, char *argv[])
     };
     float modelsRotationRad = 0.0f;
     double modelScale = 1.0;
-
-    Model model2{getAbsolutePath("statue/scene.gltf", KGL_RelativeDir::MODELS)};    
-    Transform modelTrans2 {
-        .t = glm::vec3{1.0f, 1.0f, 1.0f},
-        .r = glm::quat{glm::angleAxis(glm::radians(0.0f), glm::vec3(0,0,0))},
-        .s = glm::vec3{1.0f, 1.0f, 1.0f}
-    };
 
     Vertex lightVertices[] =
     { //     COORDINATES     //
@@ -362,7 +362,8 @@ int main(int argc, char *argv[])
 
             double fps = 1.0 / deltaTime; 
             double msPerFrame = deltaTime * 1000.0;
-            string title = std::format("{} | {} FPS | Ms/frame: {}", windowConfig.title, (int)fps, (float)msPerFrame);
+            //string title = std::format("{} | {} FPS | Ms/frame: {}", windowConfig.title, (int)fps, (float)msPerFrame);
+            string title = windowConfig.title + " | " + std::to_string((int)fps) + " FPS | Ms/frame: " + std::to_string((float)msPerFrame);
             glfwSetWindowTitle(window, title.c_str());
 
             float lr = 0, lg = 0, lb =0;
@@ -408,7 +409,6 @@ int main(int argc, char *argv[])
             model.Draw(&shaderProgram, &camera, trans);
         }
 
-        model2.Draw(&shaderProgram, &camera, modelTrans2);
         lightModel.Draw(&lightShaderProgram, &camera, &lightModelTrans);
         
         glfwSwapBuffers(window);
@@ -539,10 +539,12 @@ void HSVtoRGB(float h, float s, float v, float &r, float &g, float &b) {
 
 void setArgVal(const std::string& name, int value)
 {
-    if(name == "msaaSamples")   windowConfig.msaa = value;
-    if(name == "windowMode")    windowConfig.windowMode = value;
-    if(name == "frameDelay")    runtimeOpt.frameDelay = value;
-    if(name == "glFrontFace")   runtimeOpt.gl_frontFace = value;
+    if(name == "msaaSamples")       windowConfig.msaa = value;
+    if(name == "windowMode")        windowConfig.windowMode = value;
+    if(name == "frameDelay")        runtimeOpt.frameDelay = value;
+    if(name == "glFrontFace")       runtimeOpt.gl_frontFace = value;
+    if(name == "glContextMajor")    runtimeOpt.gl_versionMajor = value;
+    if(name == "glContextMinor")    runtimeOpt.gl_versionMinor = value;
     if(name == "rotateAxis")   {
         if(value < 0) value = 0;
         if(value > 2) value = 2;
@@ -554,9 +556,11 @@ void setArgVal(const std::string& name, bool value)
 {
     if(name == "enableVsync")           windowConfig.vsync = value;
     if(name == "glEnableCull")          runtimeOpt.gl_cullFace = value;
-    if(name == "glNoDepthTest")     runtimeOpt.gl_depthTest = false;
+    if(name == "glNoDepthTest")         runtimeOpt.gl_depthTest = false;
     if(name == "glPoligonMode")         runtimeOpt.gl_poligonMode = value;
     if(name == "overrideWD")            runtimeOpt.useWorkingDir = value;
+    if(name == "printGLext")            runtimeOpt.printGLextensions = value;
+
     if(name == "help") std::cout << "[CMD LINE ARGUMENTS]\n" <<
                                         "       NAME        |    TYPE    |   DEFAULT  |         DESC\n" <<
                                         "* msaaSamples      |    int     |   0        | Number of aa samples to use\n" <<
@@ -564,11 +568,14 @@ void setArgVal(const std::string& name, bool value)
                                         "* frameDelay       |    int     |   0        | Simulated tick lag\n" << 
                                         "* glFrontFace      |    int     |   0        | CCW or CW face culling\n" << 
                                         "* rotateAxis       |    int     |   1        | XYZ models rot axis\n" << 
+                                        "* glContextMajor   |    int     |   4        | Requested GL context version (x.)\n" << 
+                                        "* glContextMinor   |    int     |   6        | Requested GL context version (.x)\n" << 
                                         "* enableVsync      |    bool    |   FALSE    | Use vsync\n" << 
                                         "* glEnableCull     |    bool    |   FALSE    | Use face culling\n" << 
                                         "* glNoDepthTest    |    bool    |   FALSE    | Disable depth testing\n" << 
                                         "* glPoligonMode    |    bool    |   FALSE    | Render vertices\n" << 
                                         "* overrideWD       |    bool    |   FALSE    | Override bin/ with wd\n" <<
+                                        "* printGLext       |    bool    |   FALSE    | Prints driver GL extensions\n" <<
                                         "* model            |    string  |   ''       | Relative path to model\n" << std::endl;
 }
 
@@ -607,9 +614,17 @@ void resolveArgs(int argc, char* argv[])
 
 void resolveDirectoryPaths() 
 {
-    char buffer[MAX_PATH];
-    GetModuleFileNameA(nullptr, buffer, MAX_PATH);
-    fs::path base = fs::path(buffer).parent_path();
+    #ifdef WIN32
+        char buffer[MAX_PATH];
+        GetModuleFileNameA(nullptr, buffer, MAX_PATH);
+        fs::path base = fs::path(buffer).parent_path();
+    #endif 
+    #ifdef __LINUX__
+        //Linux
+    #endif
+    #ifdef __APPLE__
+        //Apple
+    #endif
 
     paths.bin = base;
     paths.wd = fs::current_path();
@@ -630,16 +645,62 @@ std::string getAbsolutePath(std::string relative, KGL_RelativeDir base)
     return (abs / relative).string();
 }
 
+// Crea una ventana de GLFW, si falla, el contexto no es válido
+bool tryGLcontext(int major, int minor) 
+{
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    GLFWwindow* testw = glfwCreateWindow(1, 1, "test", nullptr, nullptr);
+    bool valid = testw;
+    glfwDestroyWindow(testw);
+
+    std::cout << "[INFO] Tried GL version: " << major << "." << minor << (valid ? " (SUPPORTED)" : " (UNSUPORTED)") << std::endl;
+    return valid;
+}
+
+void setGLcontext(int& major, int& minor)
+{
+    if(tryGLcontext(major, minor)) return;
+
+    int availibleV[][2] = { {4,6}, {4,5}, {4,3}, {4,1}, {3,3} };
+
+    for(int i = 0; i < sizeof(availibleV)/sizeof(int[2]); i++) 
+    {
+        if( tryGLcontext(availibleV[i][0], availibleV[i][1]) ) {
+            major = availibleV[i][0];
+            minor = availibleV[i][1];
+            break;
+        }
+    }
+
+    if(major == 0 && minor == 0) throw std::runtime_error("Device drivers cant support minimum required GL version");
+}
+
 void printGLInfo() /// Se debe llamar siempre despues de crear el contexto OpenGL makeContextCurrent
 { 
     const GLubyte* renderer = glGetString(GL_RENDERER); // GPU
     const GLubyte* vendor   = glGetString(GL_VENDOR);   // fabricante
     const GLubyte* version  = glGetString(GL_VERSION);  // versión OpenGL
     const GLubyte* glslVersion = glGetString(GL_SHADING_LANGUAGE_VERSION); // GLSL
+    int profile, ext_n = 0, ext_i;
+    glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profile);
+    glGetIntegerv(GL_NUM_EXTENSIONS, &ext_n);
+    glGetStringi(GL_EXTENSIONS, ext_i);
 
     std::cout << "[INFO] Printing machine specifications: \n"
                 << "* GPU: " << reinterpret_cast<const char*>(renderer) << "\n" 
                 << "* Vendor: " << reinterpret_cast<const char*>(vendor) << "\n"
-                << "* OpenGL version supported: " << reinterpret_cast<const char*>(version) << "\n"
-                << "* GLSL version supported: " << reinterpret_cast<const char*>(glslVersion) << "\n";
+                << "* OpenGL version: " << reinterpret_cast<const char*>(version) << " " << ((profile & GL_CONTEXT_CORE_PROFILE_BIT) ? "Core" : "Compatibility") << "\n"
+                << "* GLSL version: " << reinterpret_cast<const char*>(glslVersion) << "\n"
+                << "* Extensions (" << ext_n << "):";
+
+    if(runtimeOpt.printGLextensions) {
+        std::cout << "\n";
+        for (int i = 0; i < ext_n; ++i) {
+            const char* ext = reinterpret_cast<const char*>(glGetStringi(GL_EXTENSIONS, i));
+            std::cout << "  - " << ext << "\n";
+        }
+    } else std::cout << " USE --printGLext TO SHOW\n";
 }
