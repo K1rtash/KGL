@@ -8,7 +8,7 @@
 
 Model::Model(fs::path file) : source{file}
 {
-    printf("[INFO] Loading model: '%s'\n", file.string().c_str());
+    std::cout << "[INFO] Loading model: '" << file.string() << "'\n";
     loadModel(file.string());
 }
 
@@ -47,7 +47,7 @@ Vertex processMeshVertex(aiMesh* mesh, unsigned int i)
     return vertex; // Ya esta completa esta estructura de Vertex, la añadimos al vector que define este Mesh
 }
 
-std::string Model::resolveTexturePath(const std::string& tex)
+/*std::string Model::resolveTexturePath(const std::string& tex)
 {
     std::string modelPath = source.string();
     // 1. Normalizar barras
@@ -77,7 +77,48 @@ std::string Model::resolveTexturePath(const std::string& tex)
     if (fs::exists(alt2))
         return alt2.string();
 
-    printf("[ERROR] Texture for model '%s' not found!", source.string().c_str());
+    std::cout << "[ERROR] Texture for model '" << source.string() << "' not found!\n";
+    return tex;
+}*/
+
+std::string Model::resolveTexturePath(const std::string& tex)
+{
+    if (tex.empty())
+        return "";
+
+    // Normalizar barras
+    std::string t = tex;
+    for (char& c : t) if (c == '\\') c = '/';
+
+    // Textura embebida (*0, *1...)
+    if (!t.empty() && t[0] == '*')
+        return t;
+
+    namespace fs = std::filesystem;
+    fs::path modelDir = fs::path(source).parent_path(); // carpeta source/
+    fs::path texPath = t; // ruta que viene de Assimp
+
+    // Si es absoluta y existe, usarla
+    if (texPath.is_absolute() && fs::exists(texPath))
+        return texPath.string();
+
+    // Si no existe relativa al modelo, ignorar path original y usar solo el nombre
+    fs::path texCandidate = modelDir / texPath;
+    if (!fs::exists(texCandidate))
+        texPath = texPath.filename(); // solo nombre del archivo
+
+    // Intentar carpeta textures/ al lado del modelo (layout estándar)
+    fs::path texInTextures = modelDir.parent_path() / "textures" / texPath;
+    if (fs::exists(texInTextures))
+        return texInTextures.string();
+
+    // Intentar al lado del modelo
+    fs::path texBesideModel = modelDir / texPath;
+    if (fs::exists(texBesideModel))
+        return texBesideModel.string();
+
+    // No encontrado
+    std::cout << "[ERROR] Texture for model '" << source.string() << "' not found! (" << texPath.string() << ")\n";
     return tex;
 }
 

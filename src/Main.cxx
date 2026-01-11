@@ -280,9 +280,10 @@ int main(int argc, char *argv[])
                 mouseState.captured = 0;
             }
 
-            if ( keyDown(getKey(GLFW_KEY_R)) ) 
+            if ( getKey(GLFW_KEY_R) == KGL_KeyState::Press ) 
             { 
                 shaderProgram.Reload();
+                lightShaderProgram.Reload();
             }
             if(getKey(GLFW_KEY_X) == KGL_KeyState::Press) 
             {

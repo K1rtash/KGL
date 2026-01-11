@@ -13,6 +13,13 @@ uniform vec4 lightColor;
 uniform vec3 lightPos;
 uniform vec3 camPos;
 
+uniform float ambientLight;
+uniform float PL_constant;
+uniform float PL_linear;
+uniform float PL_quadratic;
+uniform float SP_innerCone;
+uniform float SP_outerCone;
+
 vec4 pointLight() 
 {
     vec3 lightVec = lightPos - crntPos;
@@ -35,7 +42,7 @@ vec4 pointLight()
 	float specularLight = 0.5;
 	vec3 viewDirection = normalize(camPos - crntPos);
 	vec3 reflectionDirection = reflect(-lightDirection, normal);
-	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.), 16);
+	float specAmount = pow(max(dot(viewDirection, reflectionDirection), 0.), 16.0);
 	float specular = specAmount * specularLight;
 
     return (texture(diffuse0, texCoord) * (diffuse * inten + ambient) + texture(specular0, texCoord).r * specular * inten) * lightColor;
